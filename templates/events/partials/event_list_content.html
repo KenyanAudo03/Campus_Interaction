@@ -100,7 +100,7 @@
             <i class="fas fa-plus"></i> Create New Event
         </a>
         {% if request.GET.campus or request.GET.status %}
-        <button onclick="resetFilters()" class="btn btn-outline-secondary empty-state-btn">
+        <button style="display: none;"  onclick="resetFilters()" class="btn btn-outline-secondary empty-state-btn">
             <i class="fas fa-filter"></i> Reset Filters
         </button>
         {% endif %}

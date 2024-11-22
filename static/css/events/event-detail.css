@@ -7,35 +7,116 @@
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
 }
 
+/* General Comment Card Styling */
 .comment-card {
-    background: #fff;
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.comment-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Avatar Styling */
+.comment-card .rounded-circle {
+    font-size: 1.25rem;
+    font-weight: bold;
+    background-color: #007bff;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Username Styling */
+.comment-card h6 {
+    font-size: 1rem;
+    color: #333;
+}
+
+/* Timestamp Styling */
+.comment-card small.text-muted {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Like Button */
+.comment-card .btn {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
     border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.reply-card {
-    background: #f8f9fa;
-    border-radius: 6px;
-    padding: 0.75rem;
+.comment-card .btn-danger {
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
 }
 
-.comment-section, 
+.comment-card .btn-outline-danger {
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    background-color: transparent;
+}
+
+.comment-card .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Delete Button */
+.comment-card .btn-outline-danger {
+    color: #ff4d4d;
+    border-color: #ff4d4d;
+}
+
+.comment-card .btn-outline-danger:hover {
+    background-color: #ff4d4d;
+    color: #fff;
+}
+
+/* Comment Text */
+.comment-card .comment-content {
+    font-size: 0.95rem;
+    color: #495057;
+    line-height: 1.5;
+    border-top: 1px solid #e9ecef;
+    padding-top: 10px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .comment-card h6 {
+        font-size: 0.9rem;
+    }
+
+    .comment-card small {
+        font-size: 0.8rem;
+    }
+
+    .comment-card .btn {
+        font-size: 0.8rem;
+    }
+}
+
+
+/* .comment-section, 
 .reply-section {
     transition: max-height 0.4s ease-in-out;
     overflow: hidden;
 }
 
-.comment-section .comment-card, 
-.reply-section .reply-card {
+.comment-section .comment-card {
     border-bottom: 1px solid #e9ecef;
     padding-bottom: 1rem;
     margin-bottom: 1rem;
-}
+} */
 
-.reply-form {
-    margin-top: 1rem;
-}
+
 
 .fade-out {
     opacity: 0;
@@ -50,10 +131,348 @@
     transform: scale(1.1);
 }
 
-.reply-card, 
-.comment-card {
-    transition: all 0.3s ease-in-out;
+/* Modern button styling */
+.modern-edit-btn {
+    background-color: #17a2b8; /* Soft teal color */
+    color: white;
+    font-size: 1rem;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.reply-form {
-    display: none;
+
+.modern-edit-btn:hover {
+    background-color: #138496; /* Darker teal on hover */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.modern-delete-btn {
+    background-color: #dc3545; /* Red color */
+    color: white;
+    font-size: 1rem;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modern-delete-btn:hover {
+    background-color: #c82333; /* Darker red on hover */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Icons adjustments */
+button i {
+    font-size: 1.2rem; /* Slightly larger icons for a modern touch */
+}
+/* General card styling */
+.modern-card {
+    padding: 20px;
+    border-radius: 12px;
+    background: #f9f9f9;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Buttons */
+.modern-register-btn {
+    background: #28a745; /* Green for registration */
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modern-register-btn:hover {
+    background: #218838; /* Darker green on hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.modern-waitlist-btn {
+    background: #ffc107; /* Yellow for waitlist */
+    color: #212529;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modern-waitlist-btn:hover {
+    background: #e0a800; /* Darker yellow on hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.modern-cancel-btn {
+    background: #dc3545; /* Red for cancel */
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modern-cancel-btn:hover {
+    background: #c82333; /* Darker red on hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Alerts */
+.modern-alert {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+}
+
+/* Badges */
+.modern-badge-primary {
+    background: #007bff;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 12px;
+}
+
+.modern-badge-secondary {
+    background: #6c757d;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 12px;
+}
+
+/* Status rows */
+.modern-status {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Hero Section Styling */
+.event-hero-container {
+    position: relative;
+    overflow: hidden;
+    
+}
+
+/* Event Image */
+.event-hero {
+    margin-top: 15px;
+    position: relative;
+    height: 60vh;
+    width: 60%;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.event-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s ease;
+    border: #f39c12;
+    border-radius: 25px;
+}
+
+/* Hover effect on the event image */
+.event-hero:hover .event-image {
+    opacity: 0.8;
+}
+
+/* Event Overlay */
+.event-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8));
+    padding: 3rem 1rem;
+    transition: transform 0.3s ease;
+    transform: translateY(100%);
+}
+
+.event-hero:hover .event-overlay {
+    transform: translateY(0);
+}
+
+/* Text and Badge Styling */
+.event-overlay .container {
+    position: relative;
+    z-index: 1;
+}
+
+h1.display-4 {
+    font-weight: 700;
+    font-size: 3rem;
+    line-height: 1.2;
+}
+
+.event-overlay .d-flex {
+    font-size: 1.1rem;
+    color: white;
+    display: flex;
+    align-items: center;
+}
+
+.event-overlay .badge {
+    font-size: 0.875rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+/* Hover effect on badge */
+.event-overlay .badge:hover {
+    background-color: #f39c12;
+    cursor: pointer;
+}
+
+.parent {
+    display: flex;
+    justify-content: center; /* Centers horizontally */
+    align-items: center;    /* Centers vertically (optional) */
+   
+}
+
+/* General Card Styling */
+.card {
+    background-color: #f9f9f9;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+}
+
+/* Header Styling */
+.card-title {
+    font-weight: 600;
+    color: #333;
+}
+
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Comment Form */
+#commentForm {
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 10;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+
+#commentForm textarea {
+    border: 1px solid #ddd;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#commentForm textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+/* Comments Section */
+.comment-section {
+    max-height: 300px; /* Set the max height of the scrolling area */
+    overflow-y: auto;  /* Enable vertical scrolling */
+    padding-right: 10px; /* Add some space for a scrollbar */
+    scroll-behavior: smooth; /* Smooth scrolling effect */
+}
+
+.comment-section .text-muted {
+    font-size: 0.95rem;
+    color: #6c757d !important;
+}
+/* Style the Scrollbar (optional for modern browsers) */
+.comment-section::-webkit-scrollbar {
+    width: 8px;
+}
+
+.comment-section::-webkit-scrollbar-thumb {
+    background-color: #007bff;
+    border-radius: 4px;
+}
+
+.comment-section::-webkit-scrollbar-thumb:hover {
+    background-color: #0056b3;
+}
+
+.text-muted i {
+    color: #adb5bd;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    #toggleCommentsBtn {
+        font-size: 0.85rem;
+        padding: 0.4rem 1rem;
+    }
+
+    .btn-primary {
+        font-size: 0.8rem;
+    }
+}
+/* Comments Section Styling */
+#main-comments {
+    overflow: hidden; /* Hide overflow during animation */
+    max-height: 0;    /* Default state (collapsed) */
+    transition: max-height 0.5s ease-in-out; /* Smooth expand/collapse */
+}
+
+/* Add padding and styling when expanded */
+#main-comments.expanded {
+    padding-top: 15px;
+    padding-bottom: 15px;
 }

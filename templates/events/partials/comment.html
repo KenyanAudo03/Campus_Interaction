@@ -1,19 +1,24 @@
-{# templates/events/partials/comment.html #}
-<div class="comment-card mb-4 rounded-3 border p-3" id="comment-{{ comment.id }}">
+<div class="comment-card mb-4 rounded-3 shadow-sm p-3" id="comment-{{ comment.id }}">
     <div class="d-flex">
+        <!-- User Avatar -->
         <div class="flex-shrink-0 me-3">
-            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
-                 style="width: 40px; height: 40px;">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                 style="width: 50px; height: 50px;">
                 {{ comment.user.user.username|first|upper }}
             </div>
         </div>
+
+        <!-- Comment Content -->
         <div class="flex-grow-1">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
+                    <!-- Username and Timestamp -->
                     <h6 class="fw-bold mb-1">{{ comment.user.user.username }}</h6>
                     <small class="text-muted">{{ comment.created_at|timesince }} ago</small>
                 </div>
+                <!-- Action Buttons -->
                 <div class="d-flex gap-2">
+                    <!-- Like Button -->
                     <button 
                         onclick="toggleLike({{ comment.id }})" 
                         class="btn btn-sm {% if request.user.profile in comment.likes.all %}btn-danger{% else %}btn-outline-danger{% endif %} like-button"
@@ -22,48 +27,25 @@
                         <i class="fas fa-heart"></i>
                         <span class="likes-count ms-1">{{ comment.likes.count }}</span>
                     </button>
-                    
+
+                    <!-- Delete Button (Only for Comment Owner) -->
                     {% if request.user.profile == comment.user %}
                     <button 
-    id="delete-comment-{{ comment.id }}"
-    onclick="deleteComment({{ comment.id }})" 
-    class="btn btn-sm btn-outline-danger"
-    data-comment-id="{{ comment.id }}"
->
-    <i class="fas fa-trash"></i>
-</button>
+                        id="delete-comment-{{ comment.id }}"
+                        onclick="deleteComment({{ comment.id }})" 
+                        class="btn btn-sm btn-outline-danger"
+                        data-comment-id="{{ comment.id }}"
+                    >
+                        <i class="fas fa-trash"></i>
+                    </button>
                     {% endif %}
-                    
-<<<<<<< HEAD
-<<<<<<< HEAD
-                
-=======
->>>>>>> 3c2337f5 (Removed replying to comments)
-=======
-                
->>>>>>> 87a0b7bd (Refined the codebase)
                 </div>
             </div>
-            
-            <div class="comment-content mt-2 mb-3">
+
+            <!-- Comment Text -->
+            <div class="comment-content mt-3">
                 <p class="mb-0">{{ comment.content }}</p>
             </div>
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-           
-      
+        </div>
     </div>
-=======
-               </div>
->>>>>>> 3c2337f5 (Removed replying to comments)
-=======
-           
-      
-    </div>
->>>>>>> 87a0b7bd (Refined the codebase)
 </div>
-</div>
-
- 
- 

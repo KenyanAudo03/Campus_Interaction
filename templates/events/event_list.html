@@ -2,41 +2,40 @@
 {% block title %}All Events{% endblock %}
 {% block content %}
 <div class="container my-5" x-data="{ showFilters: false }">
-    <div class="container my-5" x-data="{ showFilters: false }">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="display-4">All Events</h1>
-            <a href="{% url 'events:create_event' %}" class="btn btn-success shadow-sm top-create-btn">
-                <i class="fas fa-plus"></i> Create New Event
-            </a>
-        </div>
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-4 fw-bold text-primary">Explore Events</h1>
+        <a href="{% url 'events:create_event' %}" class="btn btn-success shadow rounded-pill px-4 py-2">
+            <i class="fas fa-plus me-2"></i>Create Event
+        </a>
+    </div>
+
     <!-- Toggle Filters Button -->
-    <button @click="showFilters = !showFilters" 
-            class="btn btn-primary mb-3">
-        <i class="fas fa-filter"></i> Toggle Filters
+    <button style="display: none;" @click="showFilters = !showFilters" class="btn btn-outline-primary mb-3 shadow-sm">
+        <i class="fas fa-filter me-2" ></i>Filter Events
     </button>
 
     <!-- Filters Section -->
-    <div x-show="showFilters" class="bg-light p-4 rounded shadow-sm mb-4">
+    <div x-show="showFilters" class="bg-white p-4 rounded shadow mb-4" style="transition: all 0.3s;">
         <form class="row g-3">
             <div class="col-md-6">
-                <label for="campus" class="form-label">Campus</label>
-                <select name="campus" id="campus" class="form-select"
+                <label for="campus" class="form-label text-secondary">Campus</label>
+                <select name="campus" id="campus" class="form-select shadow-sm rounded-pill"
                         hx-get="{% url 'events:event_list' %}"
                         hx-target="#events-container"
                         hx-trigger="change"
                         hx-indicator="#loading-indicator">
                     <option value="">All Campuses</option>
                     {% for campus in campuses %}
-                        <option value="{{ campus }}" 
-                                {% if campus == request.GET.campus %}selected{% endif %}>
+                        <option value="{{ campus }}" {% if campus == request.GET.campus %}selected{% endif %}>
                             {{ campus }}
                         </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-6">
-                <label for="status" class="form-label">Status</label>
-                <select name="status" id="status" class="form-select"
+                <label for="status" class="form-label text-secondary">Status</label>
+                <select name="status" id="status" class="form-select shadow-sm rounded-pill"
                         hx-get="{% url 'events:event_list' %}"
                         hx-target="#events-container"
                         hx-trigger="change"
@@ -68,6 +67,37 @@
 </div>
 {% block extra_css %}
 <style>
+    body {
+        background-color: #f8f9fa; /* Light gray background */
+        font-family: 'Inter', sans-serif;
+    }
+    h1 {
+        font-weight: 700;
+    }
+    .btn-primary, .btn-success {
+        background-color: #0062cc;
+        border: none;
+    }
+    .btn-primary:hover, .btn-success:hover {
+        background-color: #004bb5;
+    }
+    .btn-outline-primary {
+        color: #0062cc;
+        border-color: #0062cc;
+    }
+    .btn-outline-primary:hover {
+        background-color: #0062cc;
+        color: #fff;
+    }
+    .form-select {
+        border: 1px solid #ddd;
+    }
+    .shadow {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .rounded-pill {
+        border-radius: 50rem;
+    }
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
@@ -76,56 +106,33 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         transition: all 0.3s ease;
     }
-    /* ... rest of your CSS ... */
+    .empty-state:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     function resetFilters() {
-        // Reset select elements
         document.getElementById('campus').value = '';
         document.getElementById('status').value = '';
-        
-        // Trigger HTMX request on campus select
         document.getElementById('campus').dispatchEvent(new Event('change'));
-        
-        // Close filters panel if using Alpine.js
-        if (typeof Alpine !== 'undefined') {
-            Alpine.store('showFilters', false);
-        }
-    }
-        // Function to handle visibility of the top create event button
-    function handleCreateButtonVisibility() {
-        const topCreateButton = document.querySelector('.top-create-btn');
-        const eventsContainer = document.getElementById('events-container');
-        const emptyState = eventsContainer.querySelector('.empty-state');
-        
-        if (topCreateButton) {
-            topCreateButton.style.display = emptyState ? 'none' : 'inline-flex';
-        }
     }
 
-    // Function to reset filters
-    function resetFilters() {
-        // Reset select elements
-        document.getElementById('campus').value = '';
-        document.getElementById('status').value = '';
-        
-        // Trigger HTMX request on campus select
-        document.getElementById('campus').dispatchEvent(new Event('change'));
-        
-        // Close filters panel if using Alpine.js
-        if (typeof Alpine !== 'undefined') {
-            Alpine.store('showFilters', false);
-        }
-    }
-
-    // Initialize button visibility
-    document.addEventListener('DOMContentLoaded', handleCreateButtonVisibility);
-
-    // Handle HTMX after-swap event to update button visibility
-    document.body.addEventListener('htmx:afterSwap', handleCreateButtonVisibility);
+    document.addEventListener('DOMContentLoaded', function() {
+        const filters = document.querySelectorAll('.form-select');
+        filters.forEach(filter => {
+            filter.addEventListener('change', () => {
+                document.querySelector('#loading-indicator').style.display = 'block';
+            });
+        });
+    });
 </script>
 {% endblock %}
 {% endblock %}
