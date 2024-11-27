@@ -19,6 +19,7 @@ urlpatterns = [
     path('maps/', include('maps.urls')),
     path('forums/', include('forums.urls')),
     path('', include('feeds.urls')),
+    path("news_feed/", include("news_feed.urls")),
 ]
 
 

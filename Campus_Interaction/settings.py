@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "resources",
     'django_filters',
+    'news_feed',
 ]
 
 
@@ -136,8 +137,9 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+
 
 MAX_UPLOAD_SIZE = 1000
 

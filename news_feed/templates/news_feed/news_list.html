@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>News List</title>
+</head>
+<body>
+    <h1>News Articles</h1>
+    <ul>
+        {% for article in news %}
+        <li>
+            <h2>{{ article.title }}</h2>
+            <p>{{ article.content }}</p>
+            <p><strong>Author:</strong> {{ article.author }}</p>
+            <p><em>Published on:</em> {{ article.published_date }}</p>
+            {% if article.image %}
+            <img src="{{ article.image.url }}" alt="{{ article.title }}">
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
