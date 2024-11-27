@@ -1,11 +1,17 @@
 <div class="header__right">
   <div class="header__right__auth">
     <!--=============== FORUM ===============-->
-    <a href="#" style="font-size: 13px">Forum</a>
-
+    <a
+      href="{% url 'forums:forum_list' %}"
+      class="{% if request.resolver_match.app_name == 'forums' %}active{% endif %}"
+    >Forum</a>
+    
     <!--=============== MESSAGING ===============-->
-    <a href="{% url 'inbox' %}" style="font-size: 13px" 
-       class="{% if request.path == '/inbox/' or '/chat/' in request.path %} active {% endif %}">
+    <a
+      href="{% url 'inbox' %}"
+      style="font-size: 13px"
+      class="{% if request.path == '/inbox/' or '/chat/' in request.path %} active {% endif %}"
+    >
       Messaging
     </a>
   </div>
@@ -24,15 +30,20 @@
       </form>
     </li>
     <li>
-      <a href="{{ dashboard_url }}">
+      {% url 'profile' as profile_url %}
+      <a href="{{ profile_url }}">
         <span class="icon_heart_alt">
           {% if user.profile.profile_pic %}
           <span>
-            <img src="{{ user.profile.profile_pic.url }}" alt="User Profile Picture" class="profile-pic" />
+            <img
+              src="{{ user.profile.profile_pic.url }}"
+              alt="User Profile Picture"
+              class="profile-pic"
+            />
           </span>
           {% endif %}
         </span>
       </a>
     </li>
   </ul>
-</div> 
+</div>

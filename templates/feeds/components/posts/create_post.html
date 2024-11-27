@@ -1,20 +1,54 @@
-<div class="card border-0 shadow-2 hover-shadow-3 mb-4">
-    <div class="card-body p-4">
-        <div class="d-flex align-items-center">
-            <img src="{{ user.profile.get_avatar_url }}" class="rounded-circle shadow-2 me-3"
-                alt="{{ user.username }}'s avatar" width="48" height="48" style="object-fit: cover;">
-            <a href="{% url 'feeds:create_post' %}" 
-               class="form-control form-control-lg bg-light border-0 rounded-pill text-muted"
-               style="cursor: pointer;">
-                <i class="far fa-edit me-2"></i>What's on your mind?
-            </a>
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="post"
+          action="{% url 'feeds:create_post' %}"
+          enctype="multipart/form-data"
+          id="createPostForm">
+      {% csrf_token %}
+      <div class="mb-3">
+        <textarea name="content"
+                  class="form-control"
+                  rows="3"
+                  placeholder="What's on your mind?"
+                  maxlength="500"></textarea>
+      </div>
+      
+      <!-- Preview containers -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div id="image-preview"></div>
         </div>
-    </div>
+        <div class="col-md-6">
+          <div id="video-preview"></div>
+        </div>
+      </div>
+      
+      <!-- Form controls -->
+      <div class="d-flex gap-2">
+        <div class="input-group">
+          <label class="input-group-text" for="image">
+            <i class="fas fa-image"></i>
+          </label>
+          <input type="file"
+                 class="form-control"
+                 id="image"
+                 name="image"
+                 accept="image/*"
+                 onchange="previewMedia(this, 'image')" />
+        </div>
+        <div class="input-group">
+          <label class="input-group-text" for="video">
+            <i class="fas fa-video"></i>
+          </label>
+          <input type="file"
+                 class="form-control"
+                 id="video"
+                 name="video"
+                 accept="video/mp4,video/mov,video/avi"
+                 onchange="previewMedia(this, 'video')" />
+        </div>
+        <button type="submit" class="btn btn-primary">Post</button>
+      </div>
+    </form>
+  </div>
 </div>
-
-<!-- Floating Create Post Button -->
-<a href="{% url 'feeds:create_post' %}" 
-   class="btn btn-primary btn-floating btn-lg floating-create-btn shadow-4-strong"
-   data-mdb-ripple-init>
-    <i class="fas fa-plus"></i>
-</a>

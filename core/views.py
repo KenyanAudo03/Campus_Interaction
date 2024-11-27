@@ -7,6 +7,7 @@ from maps.models import Landmark
 from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
+from forums.models import  Forum
 
 
 def home(request):
@@ -48,6 +49,7 @@ def search(request):
                 }
                 for event in events
             ]
+        
         # Search in Poll model fields like title and description
         polls = Poll.objects.filter(
             Q(title__icontains=query) | Q(description__icontains=query),
@@ -100,14 +102,29 @@ def search(request):
                 }
                 for item in items
             ]
+        
+        # Search in Forum model fields like name and description
+        forums = Forum.objects.filter(
+            Q(name__icontains=query) | Q(description__icontains=query)
+        )[:5]
+
+        if forums:
+            results["forums"] = [
+                {
+                    "id": forum.id,
+                    "name": forum.name,
+                    "description": truncate_description(forum.description),
+                }
+                for forum in forums
+            ]
 
     # Check if the request is AJAX
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        # If no events, polls, or posts are found, add a "no results" entry
+        # If no events, polls, posts, or forums are found, add a "no results" entry
         if not results:
             results = {"no_results": "No search results found"}
 
         return JsonResponse(results)
 
     # Optionally render a search results page here if not an AJAX request
-    return
+    return JsonResponse(results)

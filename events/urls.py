@@ -1,7 +1,12 @@
 # events/urls.py
+print("Loading API URLs...")  # Add this at the top of your app's urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested import routers
+# urls.py
+from django.urls import path
+
+from .views import  register_event,cancel_registration
 from . import api_views
 from .views import (
     EventListView,
@@ -12,11 +17,9 @@ from .views import (
     EventDeleteView,
     CampusAutocompleteView,
     LoadMoreCommentsView,
-    CommentDeleteView,
-    EventRegistrationView,
-    EventCancellationView,
-    EventStatusView,
-    WaitlistPositionView,
+   
+
+    
 )
 
 # Create a router for the main viewset
@@ -33,18 +36,7 @@ urlpatterns = [
     # API endpoints
     path('api/', include(router.urls)),
     path('api/', include(event_router.urls)),
-    path('api/events/<int:pk>/update/', 
-         api_views.EventViewSet.as_view({'patch': 'partial_update'}), 
-         name='event-update'),
-    path('api/events/<int:pk>/status/', 
-         api_views.EventViewSet.as_view({'post': 'update_event_status'}), 
-         name='event-status-update'),
-    path('api/event/<int:event_id>/status/', 
-         EventStatusView.as_view(), 
-         name='event_status'),
-    path('api/event/<int:event_id>/waitlist/', 
-         WaitlistPositionView.as_view(), 
-         name='waitlist_position'),
+
 
     # Main event URLs
     path('', EventListView.as_view(), name='event_list'),
@@ -53,25 +45,21 @@ urlpatterns = [
     path('<int:event_id>/delete/', EventDeleteView.as_view(), name='delete_event'),
     
 
-    # Registration URLs
-    path('event/<int:event_id>/register/', 
-         EventRegistrationView.as_view(), 
-         name='register'),
-    path('event/<int:event_id>/cancel/', 
-         EventCancellationView.as_view(), 
-         name='cancel'),
-
     # Comment URLs
     path('<int:event_id>/comment/', CommentCreateView.as_view(), name='add_comment'),
     path('comment/<int:comment_id>/like/', CommentLikeToggleView.as_view(), name='toggle_comment_like'),
     path('<int:event_id>/comments/', LoadMoreCommentsView.as_view(), name='load_more_comments'),
-    path('comment/<int:comment_id>/delete/', CommentDeleteView.as_view(), name='delete_comment'),
+       path('api/comments/<int:comment_id>/delete/', 
+         api_views.DeleteCommentView.as_view(), 
+         name='delete_comment'),
+
 
     # Utility URLs
     path('university/autocomplete/', CampusAutocompleteView.as_view(), name='university_autocomplete'),
     path('select2/', include('django_select2.urls')),
 
-    
-  
 
+    # Corrected registration URLs
+    path('event/<int:event_id>/register/', register_event, name='event_register'),
+    path('event/<int:event_id>/cancel/', cancel_registration, name='event_cancel_registration'),
 ]

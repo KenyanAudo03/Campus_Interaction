@@ -1,7 +1,11 @@
 import json
 import logging
 from time import sleep
-
+# views.py
+from rest_framework import generics, permissions, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -24,12 +28,20 @@ from django.views import View
 from django.views.decorators.http import require_POST, require_http_methods
 from django.views.generic import CreateView, DeleteView, DetailView, ListView
 from django.views.generic.edit import FormMixin
-
+from .managers import *
 from notifications.bulk import notify_all_users
 from profiles.models import Profile
 from .forms import CommentForm, EventForm, EventRegistrationForm
 from .models import Comment, Event, EventRegistration
 from .serializers import CommentSerializer
+from django.urls import reverse
+# views.py
+from django.views.generic import DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.urls import reverse_lazy
+from django.http import JsonResponse
+from django.utils.log import log_response
+
 
 
 # Set up logging
@@ -80,32 +92,163 @@ class EventDetailView(LoginRequiredMixin, FormMixin, DetailView):
     pk_url_kwarg = 'event_id'
     form_class = CommentForm
 
+    def get_object(self, queryset=None):
+        """Get event with prefetched registrations for efficient counting"""
+        if queryset is None:
+            queryset = self.get_queryset()
+            
+        queryset = queryset.prefetch_related('registrations')
+        return get_object_or_404(queryset, id=self.kwargs.get('event_id'))
+
+    def get_registration_status(self, event, user_profile):
+        """Get cached or fresh registration status"""
+        cache_key = f'registration_status_{event.id}_{user_profile.id}'
+        status = cache.get(cache_key)
+        
+        if not status:
+            registration = EventRegistration.objects.filter(
+                event=event,
+                participant=user_profile,
+                status__in=['registered', 'waitlist']
+            ).first()
+
+            status = {
+                'is_registered': registration is not None,
+                'registration': registration,
+                'status': getattr(registration, 'status', None),
+                'waitlist_position': getattr(registration, 'waitlist_position', None)
+            }
+            
+            # Cache for 1 minute
+            cache.set(cache_key, status, 60)
+            
+        return status
+
+    def get_event_stats(self, event):
+        """Get cached or fresh event statistics"""
+        cache_key = f'event_stats_{event.id}'
+        stats = cache.get(cache_key)
+        
+        if not stats:
+            registered_count = event.registrations.filter(
+                status='registered'
+            ).count()
+            
+            waitlist_count = event.registrations.filter(
+                status='waitlist'
+            ).count()
+            
+            spots_left = (event.max_participants - registered_count 
+                         if event.max_participants else None)
+            
+            stats = {
+                'registered_count': registered_count,
+                'waitlist_count': waitlist_count,
+                'spots_left': spots_left,
+                'is_full': (event.max_participants and 
+                           registered_count >= event.max_participants),
+                'has_waitlist': waitlist_count > 0,
+                'total_participants': registered_count + waitlist_count
+            }
+            
+            # Cache for 1 minute
+            cache.set(cache_key, stats, 60)
+            
+        return stats
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        event = self.object
         user_profile = self.request.user.profile
-        registration = EventRegistration.objects.filter(
-            event=self.object,
-            participant=user_profile,
-            status__in=['registered', 'waitlist']
-        ).first()
+        
+        # Get registration status and event stats
+        registration_status = self.get_registration_status(event, user_profile)
+        event_stats = self.get_event_stats(event)
+        participant=user_profile,
+        # Create initial form data
+        initial_form_data = {
+            'name': self.request.user.get_full_name() or self.request.user.username,
+            'email': self.request.user.email
+        }
 
         context.update({
-            'user_registered': registration is not None,
-            'registration': registration,
+            # Registration status
+            'user_registered': registration_status['is_registered'],
+            'registration': registration_status['registration'],
+            'registration_status': registration_status['status'],
+            'waitlist_position': registration_status['waitlist_position'],
+            
+            # Event statistics
+            'registered_count': event_stats['registered_count'],
+            'waitlist_count': event_stats['waitlist_count'],
+            'spots_left': event_stats['spots_left'],
+            'is_full': event_stats['is_full'],
+            'has_waitlist': event_stats['has_waitlist'],
+            'total_participants': event_stats['total_participants'],
+            
+            # Forms and additional data
+            'registration_form': EventRegistrationForm(initial=initial_form_data),
+            'comment_form': self.get_form(),
+            
             'comments': self.object.comments.all(),
-            'form': EventRegistrationForm(initial={
-                'name': self.request.user.get_full_name() or self.request.user.username,
-                'email': self.request.user.email
-            }),
-            'spots_left': self.object.spots_left,
-            'is_waitlist_open': getattr(self.object, 'is_waitlist_open', True)
+            # Waitlist settings
+            'is_waitlist_open': getattr(event, 'is_waitlist_open', True),
+            'can_register': not event_stats['is_full'] or event.is_waitlist_open,
+            
+            # Additional context for template
+            'show_waitlist_button': (
+                event_stats['is_full'] and 
+                event.is_waitlist_open and 
+                not registration_status['is_registered']
+            ),
+            'show_register_button': (
+                not event_stats['is_full'] and 
+                not registration_status['is_registered']
+            )
         })
+        
         return context
 
     def post(self, request, *args, **kwargs):
+        """Handle both AJAX registration requests and comment submissions"""
+        self.object = self.get_object()
+        
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return register_for_event(request, self.get_object().id)
-        return super().post(request, *args, **kwargs)
+            try:
+                # Handle registration through RegistrationManager
+                manager = RegistrationManager(self.object, request.user)
+                result = manager.register()
+                
+                # Clear relevant caches
+                cache.delete(f'registration_status_{self.object.id}_{request.user.profile.id}')
+                cache.delete(f'event_stats_{self.object.id}')
+                
+                return JsonResponse(result, 
+                                  status=200 if result['success'] else 400)
+            except Exception as e:
+                logger.error(f"Registration error: {str(e)}")
+                return JsonResponse({
+                    'success': False,
+                    'error': 'An unexpected error occurred'
+                }, status=500)
+        
+        # Handle comment form submission
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Handle valid comment form submission"""
+        comment = form.save(commit=False)
+        comment.event = self.object
+        comment.author = self.request.user
+        comment.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect URL after successful comment submission"""
+        return reverse('event_detail', kwargs={'event_id': self.object.id})
 
 class EventCreateView(LoginRequiredMixin, CreateView):
     model = Event
@@ -167,23 +310,7 @@ class CommentCreateView(LoginRequiredMixin, View):
         messages.error(request, 'Please correct the errors below.')
         return redirect('events:event_detail', event_id=event_id)
 
-class CommentDeleteView(LoginRequiredMixin, DeleteView):
-    model = Comment
-    pk_url_kwarg = 'comment_id'
-
-    def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        if self.object.user != request.user.profile:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'You do not have permission to delete this comment'
-            }, status=403)
-
-        self.object.delete()
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Comment deleted successfully'
-        })
+        
 
 class LoadMoreCommentsView(LoginRequiredMixin, View):
     def get(self, request, event_id):
@@ -276,292 +403,17 @@ class CampusAutocompleteView(LoginRequiredMixin, View):
 
         return JsonResponse([], safe=False)
 # Update the registration view to handle name validation properly
-
-
-
-
-class RegistrationManager:
-    """
-    Handles event registration operations with proper concurrency control
-    """
-    LOCK_TIMEOUT = 3  # seconds
-    MAX_RETRIES = 3
-    RETRY_DELAY = 0.5  # seconds
-
-    def __init__(self, event, user):
-        self.event = event
-        self.user = user
-        self.cache_key = f'registration_lock_{event.id}'
-
-    def register(self):
-        """
-        Handle registration with proper locking and retry mechanism
-        """
-        for attempt in range(self.MAX_RETRIES):
-            try:
-                with transaction.atomic():
-                    # Get event with select_for_update with a short timeout
-                    event = Event.objects.select_for_update(
-                        nowait=True,
-                        skip_locked=True
-                    ).get(id=self.event.id)
-
-                    # Check for existing registration
-                    if self._check_existing_registration():
-                        return {
-                            'success': False,
-                            'error': 'Already registered for this event'
-                        }
-
-                    # Validate event status
-                    self._validate_event(event)
-
-                    # Get current counts atomically
-                    registration_info = self._get_registration_counts(event)
-                    
-                    # Create registration
-                    registration = self._create_registration(
-                        event, 
-                        registration_info['is_full']
-                    )
-
-                    # Clear relevant cache
-                    self._clear_cache(event)
-
-                    return {
-                        'success': True,
-                        'status': registration.status,
-                        'message': ('Added to waitlist' if registration_info['is_full'] 
-                                  else 'Registration successful'),
-                        'waitlist_position': registration.waitlist_position
-                    }
-
-            except DatabaseError as e:
-                if attempt == self.MAX_RETRIES - 1:
-                    logger.error(f"Final retry failed: {str(e)}")
-                    return {
-                        'success': False,
-                        'error': 'Registration system temporarily unavailable'
-                    }
-                sleep(self.RETRY_DELAY * (2 ** attempt))  # Exponential backoff
-
-    def _check_existing_registration(self):
-        """Check if user is already registered"""
-        return EventRegistration.objects.filter(
-            participant=self.user.profile,
-            event_id=self.event.id,
-            status__in=['registered', 'waitlist']
-        ).exists()
-
-    def _validate_event(self, event):
-        """Validate event registration conditions"""
-        if event.registration_closed or (
-            event.start_date and event.end_date < timezone.now()
-        ):
-            raise ValidationError("Registration for this event has closed.")
-
-    def _get_registration_counts(self, event):
-        """Get current registration counts atomically"""
-        registered_count = EventRegistration.objects.filter(
-            event=event,
-            status='registered'
-        ).count()
-
-        return {
-            'registered_count': registered_count,
-            'is_full': event.max_participants and registered_count >= event.max_participants
-        }
-
-    def _create_registration(self, event, is_full):
-        """Create new registration with proper status"""
-        registration = EventRegistration(
-            event=event,
-            participant=self.user.profile,
-            name=self.user.profile.name,
-            email=self.user.email,
-            status='waitlist' if is_full else 'registered'
-        )
-
-        if is_full:
-            # Get next waitlist position atomically
-            last_position = EventRegistration.objects.filter(
-                event=event,
-                status='waitlist'
-            ).aggregate(Max('waitlist_position'))['waitlist_position__max'] or 0
-            registration.waitlist_position = last_position + 1
-
-        registration.save()
-        return registration
-
-    def _clear_cache(self, event):
-        """Clear relevant cache keys"""
-        cache.delete_many([
-            f'event_status_{event.id}',
-            f'registration_count_{event.id}',
-            f'waitlist_count_{event.id}'
-        ])
-
-class WaitlistManager:
-    """
-    Handles waitlist operations with proper concurrency control
-    """
-    def __init__(self, event):
-        self.event = event
-        self.cache_key = f'waitlist_lock_{event.id}'
-
-    def process_cancellation(self, registration):
-        """
-        Handle registration cancellation and waitlist promotion
-        """
-        try:
-            with transaction.atomic():
-                # Lock the event for updating
-                event = Event.objects.select_for_update(
-                    nowait=True
-                ).get(id=self.event.id)
-
-                was_registered = registration.status == 'registered'
-                
-                # Store position for reordering
-                old_position = registration.waitlist_position
-                
-                # Cancel registration
-                registration.delete()
-
-                # If it was a registered spot, try to promote from waitlist
-                if was_registered:
-                    self._promote_next_in_line(event)
-                elif old_position:
-                    # Reorder waitlist after cancellation
-                    self._reorder_waitlist(event, old_position)
-
-                # Clear cache
-                self._clear_cache(event)
-
-                return {
-                    'success': True,
-                    'message': 'Registration cancelled successfully'
-                }
-
-        except DatabaseError as e:
-            logger.error(f"Error in cancellation: {str(e)}")
-            return {
-                'success': False,
-                'error': 'Unable to process cancellation'
-            }
-
-    def _promote_next_in_line(self, event):
-        """
-        Promote the next person from waitlist to registered
-        """
-        next_in_line = EventRegistration.objects.filter(
-            event=event,
-            status='waitlist'
-        ).order_by('waitlist_position').select_for_update().first()
-
-        if next_in_line:
-            next_in_line.status = 'registered'
-            next_in_line.waitlist_position = None
-            next_in_line.save()
-
-            # Send notification
-            self._send_promotion_notification(next_in_line)
-            
-            # Reorder remaining waitlist
-            self._reorder_waitlist(event, next_in_line.waitlist_position)
-
-    def _reorder_waitlist(self, event, start_position):
-        """
-        Reorder waitlist positions starting from given position
-        """
-        with transaction.atomic():
-            waitlist_entries = EventRegistration.objects.filter(
-                event=event,
-                status='waitlist',
-                waitlist_position__gt=start_position
-            ).order_by('waitlist_position').select_for_update()
-
-            for i, entry in enumerate(waitlist_entries, start_position):
-                entry.waitlist_position = i
-                entry.save(update_fields=['waitlist_position'])
-
-    def _clear_cache(self, event):
-        """Clear relevant cache keys"""
-        cache.delete_many([
-            f'event_status_{event.id}',
-            f'registration_count_{event.id}',
-            f'waitlist_count_{event.id}'
-        ])
-
-# Updated view function using the managers
-@login_required
-@require_http_methods(["POST"])
-def register_for_event(request, event_id):
-    try:
-        event = Event.objects.get(id=event_id)
-        manager = RegistrationManager(event, request.user)
-        result = manager.register()
-        
-        return JsonResponse(result, 
-                          status=200 if result['success'] else 400)
-    except Event.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Event not found'
-        }, status=404)
-    except Exception as e:
-        logger.error(f"Registration error: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': 'An unexpected error occurred'
-        }, status=500)
-
-@login_required
-@require_http_methods(["POST"])
-def cancel_registration(request, event_id):
-    try:
-        event = Event.objects.get(id=event_id)
-        registration = EventRegistration.objects.get(
-            event=event,
-            participant=request.user.profile,
-            status__in=['registered', 'waitlist']
-        )
-        
-        manager = WaitlistManager(event)
-        result = manager.process_cancellation(registration)
-        
-        return JsonResponse(result, 
-                          status=200 if result['success'] else 400)
-    except (Event.DoesNotExist, EventRegistration.DoesNotExist):
-        return JsonResponse({
-            'success': False,
-            'error': 'Registration not found'
-        }, status=404)
-    except Exception as e:
-        logger.error(f"Cancellation error: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': 'An unexpected error occurred'
-        }, status=500)
-
+#views.py
 class EventRegistrationView(View):
-    """
-    Handles event registration with proper concurrency control
-    """
     @method_decorator(login_required)
     def post(self, request, event_id):
         try:
-            event = Event.objects.get(id=event_id)
+            event = get_object_or_404(Event, id=event_id)
             manager = RegistrationManager(event, request.user)
             result = manager.register()
             
             return JsonResponse(result, 
                               status=200 if result['success'] else 400)
-        except Event.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'error': 'Event not found'
-            }, status=404)
         except Exception as e:
             logger.error(f"Registration error: {str(e)}")
             return JsonResponse({
@@ -570,14 +422,12 @@ class EventRegistrationView(View):
             }, status=500)
 
 class EventCancellationView(View):
-    """
-    Handles event registration cancellation
-    """
     @method_decorator(login_required)
     def post(self, request, event_id):
         try:
-            event = Event.objects.get(id=event_id)
-            registration = EventRegistration.objects.get(
+            event = get_object_or_404(Event, id=event_id)
+            registration = get_object_or_404(
+                EventRegistration,
                 event=event,
                 participant=request.user.profile,
                 status__in=['registered', 'waitlist']
@@ -586,13 +436,7 @@ class EventCancellationView(View):
             manager = WaitlistManager(event)
             result = manager.process_cancellation(registration)
             
-            return JsonResponse(result, 
-                              status=200 if result['success'] else 400)
-        except (Event.DoesNotExist, EventRegistration.DoesNotExist):
-            return JsonResponse({
-                'success': False,
-                'error': 'Registration not found'
-            }, status=404)
+            return JsonResponse(result, status=200)
         except Exception as e:
             logger.error(f"Cancellation error: {str(e)}")
             return JsonResponse({
@@ -601,26 +445,21 @@ class EventCancellationView(View):
             }, status=500)
 
 class EventStatusView(View):
-    """
-    Handles event status checks
-    """
     @method_decorator(login_required)
     def get(self, request, event_id):
         try:
-            event = Event.objects.get(id=event_id)
+            event = get_object_or_404(Event, id=event_id)
             
             # Try to get cached status first
             cache_key = f'event_status_{event_id}'
             status_data = cache.get(cache_key)
             
             if not status_data:
-                # Get user's registration if exists
                 registration = EventRegistration.objects.filter(
                     event=event,
                     participant=request.user.profile
                 ).first()
                 
-                # Count registrations
                 registered_count = EventRegistration.objects.filter(
                     event=event,
                     status='registered'
@@ -661,11 +500,6 @@ class EventStatusView(View):
             
             return JsonResponse(status_data)
             
-        except Event.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'error': 'Event not found'
-            }, status=404)
         except Exception as e:
             logger.error(f"Error getting event status: {str(e)}")
             return JsonResponse({
@@ -674,15 +508,12 @@ class EventStatusView(View):
             }, status=500)
 
 class WaitlistPositionView(View):
-    """
-    Handles waitlist position checks
-    """
     @method_decorator(login_required)
     def get(self, request, event_id):
         try:
             event = get_object_or_404(Event, id=event_id)
-            
-            registration = EventRegistration.objects.get(
+            registration = get_object_or_404(
+                EventRegistration,
                 event=event,
                 participant=request.user.profile,
                 status='waitlist'
@@ -708,42 +539,84 @@ class WaitlistPositionView(View):
                 'success': False,
                 'error': 'Unable to check waitlist position'
             }, status=500)
+            
+            
+# views.py
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
+import json
 
-# Update the email sending function to handle name properly
-def send_registration_email(registration):
-    """Send registration confirmation or waitlist email to participant."""
+from .managers import RegistrationManager, WaitlistManager
+from .models import Event, EventRegistration
+
+@login_required
+@require_POST
+@csrf_protect
+def register_event(request):
     try:
-        if not registration.name or not registration.email:
-            raise ValueError("Registration must have both name and email")
+        data = json.loads(request.body)
+        event_id = data.get('event_id')
+        name = data.get('name')
+        email = data.get('email')
 
-        subject = f"Registration Update - {registration.event.title}"
-        
-        context = {
-            'registration': registration,
-            'event': registration.event,
-            'name': registration.name,
-            'status': registration.get_status_display(),
-            'waitlist_position': registration.waitlist_position if registration.status == 'waitlist' else None
+        # Fetch the event
+        event = Event.objects.get(id=event_id)
+
+        # Use the RegistrationManager to handle registration
+        registration_manager = RegistrationManager(event, request.user)
+        result = registration_manager.register()
+
+        # Prepare the response data
+        response_data = {
+            'success': result['success'],
+            'status': result.get('status'),
+            'waitlist_position': result.get('waitlist_position'),
+            'spots_left': event.spots_left,
+            'waitlist_count': event.waitlist_count,
+            'error': result.get('error', '')
         }
 
-        template = ('events/emails/registration_confirmation.html' 
-                   if registration.status == 'registered' 
-                   else 'events/emails/waitlist_confirmation.html')
-        
-        html_message = render_to_string(template, context)
-        plain_message = strip_tags(html_message)
+        return JsonResponse(response_data)
 
-        send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[registration.email],
-            html_message=html_message,
-            fail_silently=False
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Event not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+@require_POST
+@csrf_protect
+def cancel_registration(request):
+    try:
+        data = json.loads(request.body)
+        event_id = data.get('event_id')
+
+        # Fetch the event and existing registration
+        event = Event.objects.get(id=event_id)
+        registration = EventRegistration.objects.get(
+            event=event, 
+            participant=request.user.profile
         )
 
-        logger.info(f"Registration email sent successfully to {registration.email} for event {registration.event.title}")
+        # Use the WaitlistManager to process cancellation
+        waitlist_manager = WaitlistManager(event)
+        result = waitlist_manager.process_cancellation(registration)
 
+        # Prepare the response data
+        response_data = {
+            'success': result['success'],
+            'message': result.get('message', 'Registration cancelled'),
+            'spots_left': event.spots_left,
+            'waitlist_count': event.waitlist_count
+        }
+
+        return JsonResponse(response_data)
+
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Event not found'}, status=404)
+    except EventRegistration.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Registration not found'}, status=404)
     except Exception as e:
-        logger.error(f"Error sending registration email to {registration.email} for event {registration.event.title}: {e}")
-        raise
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

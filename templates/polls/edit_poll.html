@@ -1,12 +1,18 @@
 {% extends 'base.html' %} {% block title %}Poll - Edit {{poll.title}}{% endblock %} 
 {% block content %}
 {% load static %}
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+  rel="stylesheet"
+/>
 <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
 <link rel="stylesheet" href="{% static '/css/polls/create_edit_poll.css' %}">
+<div class="container py-4">
 <nav class="poll_navbar">
   <div class="navbar-buttons">
-    <a href="{% url 'polls:edit_poll' poll.id %}" class="logo">Edit - {{ poll.title|slice:":7" }}{% if poll.title|length > 7 %}...{% endif %}
+    <a href="{% url 'polls:edit_poll' poll.id %}" class="logo">Edit - "{{ poll.title|slice:":7" }}"{% if poll.title|length > 7 %}...{% endif %}
     </a>
     <a href="{% url 'polls:add_polls' %}" class="create-poll-btn"
       >+ Create New Poll</a
@@ -36,6 +42,15 @@
   transform: translateY(-20px); /* Slide in from top */
   z-index: 1000;
 }
+.poll_navbar .logo {
+  font-size: 40px;
+  color: #333;
+  text-decoration: none;
+  font-family: "Archivo Black", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
 
 
   .alert.show {
@@ -205,14 +220,6 @@
               style="{% if form.instance.option_image %}display: inline{% else %}display: none{% endif %}"
               onclick="deleteFile(this)">Delete</span>
     </div>
-
-    <div class="delete-image-checkbox">
-      <label>
-          <input type="checkbox" name="form-{{ forloop.counter0 }}-remove_image" value="1">
-          Remove this image
-      </label>
-  </div>
-
     <div class="correct-answer"
          style="{% if poll_form.instance.poll_type != 'question' %}display: none;{% endif %}">
         <label class="correct-answer-label">
@@ -581,6 +588,7 @@
     </div>
   </div>
 </form>
+</div>
 <script>
   document.getElementById("edit-banner-btn").addEventListener("click", function() {
     const dragArea = document.getElementById("drag-area");
@@ -971,6 +979,4 @@
         }
     });
 </script>
-
-
 {% endblock %}

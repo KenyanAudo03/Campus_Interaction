@@ -11,25 +11,22 @@ def chat_room(request, username):
     other_user = get_object_or_404(User, username=username)
     conversation, created = Conversation.objects.get_or_create_conversation(request.user, other_user)
     
-    # Fetch messages for this conversation
     messages = Message.objects.filter(conversation=conversation).order_by('timestamp')
     
-    return render(request, 'messaging/alternate.html', {
+    return render(request, 'messaging/chatroom.html', {
         'conversation': conversation,
         'other_user': other_user,
         'conversation_id': conversation.id,
-        'messages': messages,  # Pass messages to the template
+        'messages': messages,
     })
 
 
 @login_required
 def inbox(request):
-    # Get all users you've chatted with
     chat_users = User.objects.filter(
         conversations__participants=request.user
     ).distinct().exclude(id=request.user.id)
 
-    # Handle search functionality
     search_query = request.GET.get('q')
     if search_query:
         users = User.objects.filter(

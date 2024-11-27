@@ -17,6 +17,7 @@ urlpatterns = [
     path('events/', include('events.urls')),
     path('polls/', include('polls.urls')),
     path('maps/', include('maps.urls')),
+    path('forums/', include('forums.urls')),
     path('', include('feeds.urls')),
 ]
 

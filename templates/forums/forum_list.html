@@ -1,0 +1,309 @@
+{% extends 'base.html' %} {% block title %}Forums - List{% endblock %} 
+{% load static %} {% block content %}
+<!-- Custom CSS -->
+<link rel="stylesheet" href="{% static 'css/forum/shared_forum.css' %}" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+/>
+
+<div class="forums-container">
+  <header class="forums-header">
+    <div class="header-main">
+      <div class="header-left">
+        <h1>Community Forums</h1>
+        <p class="forum-stats">
+          <span
+            ><i class="fas fa-users"></i> {{ total_members_display }}
+            Members</span
+          >
+          <span
+            ><i class="fas fa-comments"></i> {{ total_discussions_display }}
+            Discussions</span
+          >
+          <span
+            ><i class="fas fa-clock"></i> {{ total_active_posts_display }}
+            Active</span
+          >
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <a href="{% url 'forums:forum_create' %}" class="create-forum-btn">
+          <span class="btn-content">
+            <i class="fas fa-plus-circle"></i>
+            <span class="btn-text">Create New Forum</span>
+          </span>
+          <span class="btn-tooltip">Share your ideas with the community</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="header-toolbar">
+      <div class="search-wrapper">
+        <div class="search-bar">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" placeholder="Search forums..." id="forumSearch" />
+        </div>
+      </div>
+
+      <div class="category-filters">
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn"><i class="fas fa-fire"></i> Popular</button>
+        <button class="filter-btn"><i class="fas fa-star"></i> Featured</button>
+        <button class="filter-btn"><i class="fas fa-clock"></i> Recent</button>
+      </div>
+    </div>
+  </header>
+
+  {% if object_list %}
+  <div class="forum-grid" id="forumGrid">
+    {% for forum in object_list %}
+    <div
+      class="forum-card"
+      data-forum-name="{{ forum.name }}"
+      data-forum-description="{{ forum.description }}"
+    >
+      <div class="forum-card-header">
+        {% if forum.display_picture %}
+        <img
+          src="{{ forum.display_picture.url }}"
+          alt="{{ forum.name }}"
+          class="forum-image"
+        />
+        {% else %}
+        <div class="forum-placeholder">
+          <i class="fas fa-comments"></i>
+        </div>
+        {% endif %}
+        <div class="forum-badges">
+          {% if forum.is_new %}
+          <span class="badge new">New</span>
+          {% endif %} {% if forum.is_active %}
+          <span class="badge active">Active</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="forum-card-content">
+        <h2 class="forum-name" style="text-transform: uppercase;">{{ forum.name|truncatewords:20 }}</h2>
+        <p class="forum-description">
+          {{ forum.description|truncatewords:20 }}
+        </p>
+        <div class="forum-stats">
+          <div class="stat">
+            <i class="fas fa-users"></i>
+            <span>{{ forum.member_count }} members</span>
+          </div>
+          <div class="stat">
+            <i class="fas fa-comments"></i>
+            <span>{{forum.forum_post_count}} posts</span>
+          </div>
+        </div>
+        <div class="forum-meta">
+          <div class="creator">
+            {% if forum.created_by.profile.profile_pic %}
+            <img
+              src="{{ forum.created_by.profile.profile_pic.url }}"
+              alt="{{ forum.created_by.username }}"
+              class="creator-avatar"
+            />
+            {% else %}
+            <i class="fas fa-user-circle"></i>
+            {% endif %}
+            <span>{{ forum.created_by.username }}</span>
+          </div>
+          <div class="date">
+            <i class="fas fa-calendar"></i>
+            <span>{{ forum.created_at|date:"M d, Y" }}</span>
+          </div>
+        </div>
+      </div>
+      <a
+        href="{% url 'forums:forum_detail' forum.id %}"
+        class="forum-card-overlay"
+      >
+        <span class="view-forum">View Forum</span>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="fas fa-comments-alt"></i>
+    <h2>No Forums Yet</h2>
+    <p>Be the first to start a discussion in our community!</p>
+    <a href="{% url 'forums:forum_create' %}" class="create-forum-btn"
+      >Create Forum</a
+    >
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  document.querySelectorAll(".view-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document
+        .querySelectorAll(".view-btn")
+        .forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
+  document.querySelectorAll(".filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!btn.parentElement.classList.contains("filter-dropdown")) {
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      }
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("forumSearch");
+    const forumGrid = document.getElementById("forumGrid");
+
+    function highlightText(text, searchTerm) {
+      const regex = new RegExp(`(${searchTerm})`, "gi");
+      return text.replace(regex, `<span class="highlight">$1</span>`);
+    }
+
+    searchInput.addEventListener("input", function () {
+      const searchTerm = searchInput.value.trim().toLowerCase();
+      const forumCards = forumGrid.getElementsByClassName("forum-card");
+      let visibleForumCount = 0;
+
+      for (let card of forumCards) {
+        const forumName = card
+          .querySelector(".forum-name")
+          .textContent.toLowerCase();
+        const forumDescription = card
+          .querySelector(".forum-description")
+          .textContent.toLowerCase();
+
+        if (
+          forumName.includes(searchTerm) ||
+          forumDescription.includes(searchTerm)
+        ) {
+          card.style.display = "";
+          visibleForumCount++;
+          const highlightedName = highlightText(
+            card.querySelector(".forum-name").textContent,
+            searchTerm
+          );
+          const highlightedDescription = highlightText(
+            card.querySelector(".forum-description").textContent,
+            searchTerm
+          );
+
+          card.querySelector(".forum-name").innerHTML = highlightedName;
+          card.querySelector(".forum-description").innerHTML =
+            highlightedDescription;
+        } else {
+          card.style.display = "none";
+        }
+      }
+
+      const emptyState = document.querySelector(".empty-state");
+      emptyState.style.display = visibleForumCount === 0 ? "block" : "none";
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const forumGrid = document.getElementById("forumGrid");
+    const filterButtons = document.querySelectorAll(".filter-btn");
+    const forumCards = Array.from(document.querySelectorAll(".forum-card"));
+
+    const parseDate = (dateString) => {
+      const [month, day, year] = dateString.split(" ");
+      const monthMap = {
+        Jan: 0,
+        Feb: 1,
+        Mar: 2,
+        Apr: 3,
+        May: 4,
+        Jun: 5,
+        Jul: 6,
+        Aug: 7,
+        Sep: 8,
+        Oct: 9,
+        Nov: 10,
+        Dec: 11,
+      };
+      return new Date(year, monthMap[month], parseInt(day));
+    };
+
+    const extractCreationDate = (forumCard) => {
+      const dateElement = forumCard.querySelector(".date span");
+      return parseDate(dateElement.textContent);
+    };
+
+    const filterMethods = {
+      // Sort by latest creation date
+      all: () => {
+        return forumCards.slice().sort((a, b) => {
+          const dateA = extractCreationDate(a);
+          const dateB = extractCreationDate(b);
+          return dateB.getTime() - dateA.getTime();
+        });
+      },
+
+      popular: () => {
+        return forumCards.slice().sort((a, b) => {
+          const membersA = parseInt(
+            a.querySelector(".stat:first-child span").textContent
+          );
+          const membersB = parseInt(
+            b.querySelector(".stat:first-child span").textContent
+          );
+          return membersB - membersA;
+        });
+      },
+
+      recent: () => {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        return forumCards.filter((card) => {
+          const forumDate = extractCreationDate(card);
+          return forumDate >= oneWeekAgo;
+        });
+      },
+
+      featured: () => {
+        return forumCards.slice().sort((a, b) => {
+          const postsA = parseInt(
+            a.querySelector(".stat:nth-child(2) span").textContent
+          );
+          const postsB = parseInt(
+            b.querySelector(".stat:nth-child(2) span").textContent
+          );
+          return postsB - postsA;
+        });
+      },
+    };
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        filterButtons.forEach((btn) => btn.classList.remove("active"));
+        button.classList.add("active");
+
+        const filterMethod = button.textContent.trim().toLowerCase();
+        forumGrid.innerHTML = "";
+
+        const filteredForums = filterMethods[filterMethod]
+          ? filterMethods[filterMethod]()
+          : forumCards;
+
+        filteredForums.forEach((forum) => forumGrid.appendChild(forum));
+      });
+    });
+
+    // Initial load - sort by latest creation date
+    const allForums = filterMethods.all();
+    allForums.forEach((forum) => forumGrid.appendChild(forum));
+  });
+</script>
+
+{% endblock %}

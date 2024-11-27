@@ -1,14 +1,7 @@
 {% extends "base.html" %} {% block title %} {{ item.title}} details |
 MarketPlace{% endblock %}{% block content %} {% load static %}
 <link rel="stylesheet" href="{% static '/css/marketplace/add_items.css' %}" />
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"
-/>
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css"
-/>
+<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <!-- Breadcrumb Begin -->
 <div class="breadcrumb-option">
   <div class="container">
@@ -497,8 +490,8 @@ MarketPlace{% endblock %}{% block content %} {% load static %}
                   color: red;
                 }
 
-                .heart-icon .fa-heart-o {
-                  color: #ccc;
+                .heart-icon .bxs-heart {
+                  color: #666;
                 }
 
                 .heart-icon .fa-heart {
@@ -517,8 +510,7 @@ MarketPlace{% endblock %}{% block content %} {% load static %}
                     {% if item.id in liked_items %}
                     <i class="fa fa-heart" aria-hidden="true"></i>
                     {% else %}
-                    <i class="fa fa-heart-o" aria-hidden="true"></i>
-
+                    <i class='bx bxs-heart'></i>
                     {% endif %}
                   </span>
                 </a>
@@ -565,7 +557,7 @@ MarketPlace{% endblock %}{% block content %} {% load static %}
                             likeButton.classList.add("liked");
                           } else {
                             likeIcon.classList.remove("fa-heart");
-                            likeIcon.classList.add("fa-heart-o");
+                            likeIcon.classList.add("bxs-heart");
                             likeButton.classList.remove("liked");
                           }
                         })
@@ -1280,9 +1272,7 @@ MarketPlace{% endblock %}{% block content %} {% load static %}
                   ></i>
                   {% endfor %}
                 </div>
-                <p class="review-content">
-                  <i class="fa fa-quote-left" aria-hidden="true"></i
-                  >{{review.comment|linebreaksbr }}
+                <p class="review-content"><i class="fa fa-quote-left" aria-hidden="true"></i>{{review.comment|linebreaksbr }}
                 </p>
               </div>
               {% endfor %}
@@ -1577,74 +1567,67 @@ MarketPlace{% endblock %}{% block content %} {% load static %}
   </div>
 </section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+{% block extra_js %}
 <script>
-  $(document).ready(function () {
+// Wait for both document ready AND images to load
+$(window).on('load', function() {
     const $owlCarousel = $(".product__details__pic__slider").owlCarousel({
-      loop: false,
-      margin: 0,
-      items: 1,
-      dots: false,
-      nav: true,
-      navText: [
-        '<i class="arrow_carrot-left">←</i>',
-        '<i class="arrow_carrot-right">→</i>',
-      ],
-      smartSpeed: 500,
-      autoHeight: false,
-      autoplay: false,
-      mouseDrag: true,
-      touchDrag: true,
-      pullDrag: true,
-      freeDrag: false,
-      onInitialized: updateNavigation, // Ensure buttons are correctly shown after initialization
-      onTranslated: updateNavigation, // Update after each slide change
+        loop: false,
+        margin: 0,
+        items: 1,
+        dots: false,
+        nav: true,
+        navText: [
+            '<i class="arrow_carrot-left">←</i>',
+            '<i class="arrow_carrot-right">→</i>',
+        ],
+        smartSpeed: 500,
+        autoHeight: false,
+        autoplay: false,
+        mouseDrag: true,
+        touchDrag: true,
+        pullDrag: true,
+        freeDrag: false,
+        onInitialized: updateNavigation,
+        onTranslated: updateNavigation,
     });
 
-    // Function to update navigation arrows visibility
     function updateNavigation(event) {
-      // Get the carousel instance
-      const carousel = event.relatedTarget;
+        const carousel = event.relatedTarget;
+        
+        if (carousel.current() === 0) {
+            $(".owl-prev").addClass("disabled");
+        } else {
+            $(".owl-prev").removeClass("disabled");
+        }
 
-      // Hide/show prev button (first image)
-      if (carousel.current() === 0) {
-        $(".owl-prev").addClass("disabled");
-      } else {
-        $(".owl-prev").removeClass("disabled");
-      }
-
-      // Hide/show next button (last image)
-      if (carousel.current() === carousel.maximum()) {
-        $(".owl-next").addClass("disabled");
-      } else {
-        $(".owl-next").removeClass("disabled");
-      }
+        if (carousel.current() === carousel.maximum()) {
+            $(".owl-next").addClass("disabled");
+        } else {
+            $(".owl-next").removeClass("disabled");
+        }
     }
 
-    // Function to update active thumbnail
     function updateActiveThumbnail(index) {
-      $(".product__thumb").removeClass("active");
-      $(`.product__thumb[data-slide="${index}"]`).addClass("active");
+        $(".product__thumb").removeClass("active");
+        $(`.product__thumb[data-slide="${index}"]`).addClass("active");
     }
 
-    // Handle thumbnail clicks
-    $(".product__thumb").on("click", function (e) {
-      e.preventDefault();
-      const slideIndex = $(this).data("slide");
-      $owlCarousel.trigger("to.owl.carousel", [slideIndex, 500]);
-      updateActiveThumbnail(slideIndex);
+    $(".product__thumb").on("click", function(e) {
+        e.preventDefault();
+        const slideIndex = $(this).data("slide");
+        $owlCarousel.trigger("to.owl.carousel", [slideIndex, 500]);
+        updateActiveThumbnail(slideIndex);
     });
 
-    // Update thumbnail when carousel changes
-    $owlCarousel.on("changed.owl.carousel", function (event) {
-      updateActiveThumbnail(event.item.index);
+    $owlCarousel.on("changed.owl.carousel", function(event) {
+        updateActiveThumbnail(event.item.index);
     });
 
-    // Ensure first thumbnail is active on page load
     updateActiveThumbnail(0);
-  });
+});
 </script>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const tabs = document.querySelectorAll(".nav-link");
@@ -1668,4 +1651,5 @@ MarketPlace{% endblock %}{% block content %} {% load static %}
     });
   });
 </script>
+{% endblock %}
 {% endblock %}

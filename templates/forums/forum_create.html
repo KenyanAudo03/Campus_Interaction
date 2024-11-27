@@ -1,0 +1,189 @@
+{% extends 'base.html' %} {% block title %}Forums - Create{% endblock %} 
+{% block content %} {% load static %}
+<!-- Custom CSS -->
+<link rel="stylesheet" href="{% static 'css/forum/shared_forum.css' %}" />
+
+<!-- Breadcrumb Begin -->
+<div class="breadcrumb-option">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="breadcrumb__links">
+          <a href="{% url 'forums:forum_list' %}"
+            ><i class="fa fa-users fa-2x"></i> Back To Forum List</a
+          >
+          <span>Create Forum</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Breadcrumb End -->
+<section class="checkout spad">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <h6 class="coupon__link" style="border-top: 1px solid #2d5796;">
+          <span class="icon_tag_alt"></span>
+          <a
+            >When you create a forum, you will automatically become the Admin
+            and can manage members and permissions.</a
+          >
+        </h6>
+      </div>
+    </div>
+
+    <form
+      action=""
+      method="post"
+      enctype="multipart/form-data"
+      class="checkout__form"
+    >
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-lg-8">
+          <h5>Create a new Forum</h5>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="checkout__form__input">
+                <p>Forum Name <span>*</span></p>
+                {{ form.name }}
+              </div>
+              <div class="checkout__form__input">
+                <p>Forum Description <span>*</span></p>
+                {{ form.description }}
+                <small id="charCounter" class="text-muted"
+                  >250 characters remaining</small
+                >
+              </div>
+
+              <div class="py-4">
+                <p>
+                  Forum Display Picture
+                  <span style="color: red">(Optional)</span>
+                </p>
+
+                <div id="dropzone" class="dropzone empty">
+                  <div class="preview-overlay"></div>
+                  <div class="dropzone-content">
+                    <div class="upload-icon">📁</div>
+                    <p>
+                      Drag & drop your image here, or
+                      <span class="browse">browse</span>
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    id="id_display_picture"
+                    name="display_picture"
+                    accept="image/*"
+                    class="dropzone-input"
+                  />
+                  <img
+                    id="imagePreview"
+                    src="#"
+                    alt="Image Preview"
+                    class="dropzone-preview"
+                  />
+                  <div class="progress-bar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-modern">Create Forum</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- Drag and Drop JS -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const dropzone = document.getElementById("dropzone");
+    const input = document.getElementById("id_display_picture");
+    const preview = document.getElementById("imagePreview");
+    const progressBar = document.querySelector(".progress-bar");
+    const previewOverlay = document.querySelector(".preview-overlay");
+
+    // Handle drag-and-drop events
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("drag-over");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("drag-over");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("drag-over");
+
+      const files = e.dataTransfer.files;
+      if (files.length) {
+        input.files = files;
+        handleFile(files[0]);
+      }
+    });
+    input.addEventListener("change", () => {
+      if (input.files.length) {
+        handleFile(input.files[0]);
+      }
+    });
+    function handleFile(file) {
+      const reader = new FileReader();
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 5;
+        progressBar.style.width = `${progress}%`;
+
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+          setTimeout(() => {
+            progressBar.style.width = "0%";
+          }, 300);
+        }
+      }, 50);
+
+      reader.onload = (e) => {
+        preview.src = e.target.result;
+        preview.classList.add("show");
+        previewOverlay.classList.add("show");
+        dropzone.classList.remove("empty");
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    // Handle click on browse text
+    document.querySelector(".browse").addEventListener("click", () => {
+      input.click();
+    });
+  });
+</script>
+<!-- Description Text Remainder -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const descriptionField = document.getElementById("description__input");
+    const charCounter = document.getElementById("charCounter");
+    const maxChars = 250;
+
+    descriptionField.addEventListener("input", function () {
+      // Count the number of characters
+      const charCount = descriptionField.value.length;
+      const charsRemaining = maxChars - charCount;
+
+      // Update the character counter display
+      if (charsRemaining >= 0) {
+        charCounter.textContent = `${charsRemaining} characters remaining`;
+        charCounter.classList.remove("text-danger");
+      } else {
+        charCounter.textContent = `Exceeded by ${-charsRemaining} characters`;
+        charCounter.classList.add("text-danger");
+      }
+    });
+  });
+</script>
+
+{% endblock %}

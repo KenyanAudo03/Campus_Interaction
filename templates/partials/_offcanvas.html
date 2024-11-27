@@ -20,7 +20,9 @@
         </form>
       </li>
       <li>
-        <a href="{{ dashboard_url }}">
+        
+      {% url 'profile' as profile_url %}
+        <a href="{{ profile_url }}">
           <span class="icon_heart_alt">
             {% if user.profile.profile_pic %}
             <span>
@@ -52,7 +54,7 @@
     {% if user.is_authenticated %}
     <div class="offcanvas__auth1">
       <!--=============== FORUM ===============-->
-      <a href="#">Forum</a>
+      <a href="{% url 'forums:forum_list' %}">Forum</a>
       <!--=============== MESSAGING ===============-->
       <a href="{% url 'inbox' %}" class="{% if request.path == '/inbox/' or '/chat/' in request.path %} active {% endif %}">
         Messaging

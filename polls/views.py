@@ -61,13 +61,13 @@ def base_poll(request):
         no_polls_message = "No polls found matching your search criteria."
 
     # Get popular polls
-    popular_polls = (
-        Poll.objects.filter(view_count__gt=10)
-        .exclude(expiration_time__lt=current_time)
-        .filter(Q(expiration_time__lt=current_time) & Q(allow_expiration=True))
-        .distinct()
-        .order_by("-view_count")
-    )
+    popular_polls = Poll.objects.filter(
+    view_count__gt=10
+    ).filter(
+        Q(expiration_time__gte=current_time) | Q(allow_expiration=False)
+    ).exclude(
+        expiration_time__lt=current_time  # Ensure expired polls are excluded
+    ).distinct().order_by("-view_count")
 
     # Get liked polls
     liked_polls = Like.objects.filter(
@@ -86,8 +86,6 @@ def base_poll(request):
     # User choosen to archived poll
     optional_polls_archived = polls.filter(Q(is_archived=True))
     archived_results = polls.filter(Q(is_archived_results=True))
-
-
 
     return render(
         request,
@@ -111,13 +109,13 @@ def base_poll(request):
 def search_poll(request, title):
     polls = Poll.objects.filter(title__iexact=title)
     current_time = timezone.now()
-    popular_polls = (
-        Poll.objects.filter(view_count__gt=10)
-        .exclude(expiration_time__lt=current_time)
-        .filter(Q(expiration_time__lt=current_time) & Q(allow_expiration=True))
-        .distinct()
-        .order_by("-view_count")
-    )
+    popular_polls = Poll.objects.filter(
+    view_count__gt=1
+    ).filter(
+        Q(expiration_time__gte=current_time) | Q(allow_expiration=False)
+    ).exclude(
+        expiration_time__lt=current_time  # Ensure expired polls are excluded
+    ).distinct().order_by("-view_count")
     archived_polls = Poll.objects.filter(
         Q(expiration_time__lt=current_time) & Q(allow_expiration=True)
     ).distinct()
@@ -156,7 +154,16 @@ def load_comments(request, poll_id):
         comments_data.append(
             {
                 "id": c.id,
-                "user": {"username": c.user.username},
+                "user": {
+                    "username": c.user.username,
+                    "profile_pic": (
+                        c.user.profile.profile_pic.url
+                        if hasattr(c.user, "profile")
+                        and c.user.profile
+                        and c.user.profile.profile_pic
+                        else None
+                    ),
+                },
                 "text": c.text,
                 "created_at": c.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "total_likes": c.total_likes(),  # Call the method with parentheses
@@ -175,7 +182,9 @@ def add_polls(request):
         error_message = None
 
         if poll_form.is_valid() and option_formset.is_valid():
-            poll = poll_form.save(commit=False)  # Create poll instance but don't save yet
+            poll = poll_form.save(
+                commit=False
+            )  # Create poll instance but don't save yet
 
             if poll.poll_type == "question":
                 correct_answers = any(
@@ -196,7 +205,9 @@ def add_polls(request):
                     poll.save()
 
                     for option_form in option_formset:
-                        if option_form.cleaned_data.get("option_text") or option_form.cleaned_data.get("option_image"):
+                        if option_form.cleaned_data.get(
+                            "option_text"
+                        ) or option_form.cleaned_data.get("option_image"):
                             option = option_form.save(commit=False)
                             option.poll = poll
                             option.save()
@@ -214,7 +225,9 @@ def add_polls(request):
                 poll.save()
 
                 for option_form in option_formset:
-                    if option_form.cleaned_data.get("option_text") or option_form.cleaned_data.get("option_image"):
+                    if option_form.cleaned_data.get(
+                        "option_text"
+                    ) or option_form.cleaned_data.get("option_image"):
                         option = option_form.save(commit=False)
                         option.poll = poll
                         option.save()
@@ -225,8 +238,8 @@ def add_polls(request):
             logger.error("Option Formset Errors: %s", option_formset.errors)
 
             # Handle banner image error separately
-            if 'banner_image' in poll_form.errors:
-                error_message = poll_form.errors['banner_image'][0]
+            if "banner_image" in poll_form.errors:
+                error_message = poll_form.errors["banner_image"][0]
             elif option_formset.non_form_errors():
                 error_message = "At least two options are required."
             else:
@@ -253,6 +266,8 @@ def add_polls(request):
             "error_message": error_message,
         },
     )
+
+
 @login_required
 def user_dashboard(request):
     query = request.GET.get("query", "")
@@ -291,8 +306,14 @@ def user_dashboard(request):
     total_polls = polls.count()
     total_views = polls.aggregate(total_views=Sum("view_count"))["total_views"] or 0
 
-    response_rate = int(min((total_votes / total_polls * 100), 100)) if total_polls > 0 else 0
-    engagement_rate = int(((total_votes + total_comments) / (total_polls * 2)) * 100) if total_polls > 0 else 0
+    response_rate = (
+        int(min((total_votes / total_polls * 100), 100)) if total_polls > 0 else 0
+    )
+    engagement_rate = (
+        int(((total_votes + total_comments) / (total_polls * 2)) * 100)
+        if total_polls > 0
+        else 0
+    )
 
     most_engaged_poll = (
         polls.annotate(engagement=Count("poll_likes") + Count("comments"))
@@ -302,7 +323,9 @@ def user_dashboard(request):
     most_engaged_poll_title = most_engaged_poll.title if most_engaged_poll else "N/A"
 
     average_votes_per_poll = int(total_votes / total_polls) if total_polls > 0 else 0
-    average_comments_per_poll = int(total_comments / total_polls) if total_polls > 0 else 0
+    average_comments_per_poll = (
+        int(total_comments / total_polls) if total_polls > 0 else 0
+    )
 
     return render(
         request,
@@ -342,12 +365,16 @@ def edit_poll(request, poll_id):
 
     if request.method == "POST":
         poll_form = EditPollForm(request.POST, request.FILES, instance=poll)
-        option_formset = OptionFormSet(request.POST, request.FILES, queryset=existing_options)
+        option_formset = OptionFormSet(
+            request.POST, request.FILES, queryset=existing_options
+        )
 
         # Check if the poll type is "question" and if there are any correct answers
         if poll.poll_type == "question":
             correct_answers = any(
-                option_form.cleaned_data.get("is_correct") for option_form in option_formset if option_form.is_valid()
+                option_form.cleaned_data.get("is_correct")
+                for option_form in option_formset
+                if option_form.is_valid()
             )
             if not correct_answers:
                 error_message = "A question must have at least one correct answer."
@@ -363,19 +390,26 @@ def edit_poll(request, poll_id):
 
             # Save options from the formset
             for option_form in option_formset:
-                if option_form.cleaned_data.get("option_text") or option_form.cleaned_data.get("option_image"):
+                if option_form.cleaned_data.get(
+                    "option_text"
+                ) or option_form.cleaned_data.get("option_image"):
                     option = option_form.save(commit=False)
                     option.poll = poll
-                    if "option_image" in option_form.cleaned_data and option_form.cleaned_data["option_image"]:
+                    if (
+                        "option_image" in option_form.cleaned_data
+                        and option_form.cleaned_data["option_image"]
+                    ):
                         option.option_image = option_form.cleaned_data["option_image"]
                     option.save()
-                    
 
             return redirect("polls:user_dashboard")
         else:
             logger.error("Poll Form Errors: %s", poll_form.errors)
             logger.error("Option Formset Errors: %s", option_formset.errors)
-            error_message = error_message or "There were errors in the form. Please check the fields."
+            error_message = (
+                error_message
+                or "There were errors in the form. Please check the fields."
+            )
 
     else:
         # Initialize the forms with the existing poll and options data
@@ -396,20 +430,11 @@ def edit_poll(request, poll_id):
 
 @login_required
 def vote_poll(request, poll_id):
-    # Attempt to retrieve the poll; will raise 404 if it doesn't exist
+    # Fetch poll and related data
     poll = get_object_or_404(Poll, id=poll_id)
-
-    # Check if the poll is expired
-    expiration_status = poll.check_expiration()
-    if expiration_status["expired"]:
-        if expiration_status["redirect"]:
-            return redirect("polls:poll_results", poll_id=poll.id)
-        else:
-            return HttpResponse(
-                "This poll has expired and is not public. You cannot vote on this poll."
-            )
-
-    # Increment view count if not viewed before
+    active_polls = Poll.objects.filter(is_archived=False, is_public=True).exclude(
+        allow_expiration=True, expiration_time__lt=timezone.now()
+    )
     if not request.session.get(f"viewed_poll_{poll.id}", False):
         poll.increment_view_count()
         request.session[f"viewed_poll_{poll.id}"] = True
@@ -421,6 +446,13 @@ def vote_poll(request, poll_id):
     if user_vote and not user_vote.can_vote_again():
         has_reached_vote_limit = True
 
+    # Get liked polls
+    liked_polls = Like.objects.filter(
+        user=request.user, poll__in=active_polls
+    ).values_list("poll_id", flat=True)
+    liked_polls_set = set(liked_polls)
+
+    # Timezone handling for the poll
     utc_now = timezone.now()
     kenyan_tz = pytz.timezone("Africa/Nairobi")
     now = utc_now.astimezone(kenyan_tz)
@@ -428,24 +460,30 @@ def vote_poll(request, poll_id):
     time_limit = now - timedelta(minutes=30)
 
     if request.method == "POST":
+        # Handle canceling a vote (only for opinion polls)
         if "cancel_vote" in request.POST and user_vote and user_vote.can_vote_again():
-            if (
-                poll.poll_type == "opinion"
-                and user_vote.created_at >= time_limit
-                and poll.is_active
-            ):
-                # Increment the attempts in Poll
-                poll.attempts += 1
-                poll.save()  # Save the updated attempts
-                user_vote.delete()  # Delete the existing vote
-                return redirect("polls:vote_poll", poll_id=poll.id)
+                if poll.is_active and user_vote.created_at >= time_limit:
+                    # Increment attempts to reflect the user canceling their vote
+                    poll.attempts += 1
+                    poll.save()
+
+                    if poll.multi_option:
+                        # For multi-option polls, fetch the user's selected options and delete them
+                        selected_votes = Vote.objects.filter(user=request.user, poll=poll)
+                        selected_option_ids = selected_votes.values_list('option__id', flat=True)
+                        
+                        # Delete all the selected options for this user in this poll
+                        selected_votes.delete()
+                    else:
+                        # For single-option polls, delete the user's vote
+                        user_vote.delete()
+
+                    return redirect("polls:vote_poll", poll_id=poll.id)
+
+
 
         # Voting logic
-        selected_options = (
-            request.POST.getlist("option")
-            if poll.multi_option
-            else [request.POST.get("option")]
-        )
+        selected_options = request.POST.getlist("option[]")
 
         if not user_vote or user_vote.can_vote_again():
             if poll.multi_option:
@@ -457,6 +495,7 @@ def vote_poll(request, poll_id):
                 option = get_object_or_404(Option, id=option_id)
                 if user_vote:
                     user_vote.option = option
+                    
                     user_vote.created_at = timezone.now()
                     user_vote.save()
                 else:
@@ -468,12 +507,19 @@ def vote_poll(request, poll_id):
 
             return redirect("polls:vote_poll", poll_id=poll.id)
 
+    # Remaining attempts logic
     remaining_attempts = 2 - poll.attempts
+    user_votes = Vote.objects.filter(user=request.user, poll=poll)
+    selected_option_ids = list(user_votes.values_list('option__id', flat=True))
+
+
+
     return render(
         request,
-        "polls/vote.html",
+        "polls/vote.html",  # Template for displaying the voting page
         {
             "poll": poll,
+            "liked_polls_set": liked_polls_set,
             "options": options,
             "multi_option": poll.multi_option,
             "user_vote": user_vote,
@@ -483,6 +529,7 @@ def vote_poll(request, poll_id):
             "remaining_attempts": remaining_attempts,
             "now": now,
             "time_limit": time_limit,
+            'selected_option_ids': selected_option_ids,
         },
     )
 
@@ -497,10 +544,21 @@ def poll_results(request, poll_id):
     top_voted_option = None
     max_votes = 0
 
+    user_selected_options = []  # To track options selected by the current user
+    selected_options_percentages = []  # To store percentages of user's selected options
+
     # Populate results and find the top-voted option
     for option in options:
         is_correct = option.is_correct
         votes = option.votes.count()
+        percentage = (votes / total_votes * 100) if total_votes > 0 else 0
+
+        # If the user is logged in, check their votes
+        if request.user.is_authenticated:
+            user_voted = option.votes.filter(user=request.user).exists()
+            if user_voted:
+                user_selected_options.append(option.option_text)
+                selected_options_percentages.append(percentage)
 
         # Get scored users if the poll is public
         scored_users = (
@@ -514,7 +572,6 @@ def poll_results(request, poll_id):
         if not is_correct:
             failed_users = option.votes.values_list("user__username", flat=True)
 
-        percentage = (votes / total_votes * 100) if total_votes > 0 else 0
         results.append(
             {
                 "option_text": option.option_text,
@@ -531,6 +588,13 @@ def poll_results(request, poll_id):
         if votes > max_votes:
             max_votes = votes
             top_voted_option = option.option_text
+
+    # Calculate average percentage of selected options
+    avg_percentage = (
+        sum(selected_options_percentages) / len(selected_options_percentages)
+        if selected_options_percentages
+        else None
+    )
 
     # Generate the QR code
     result_link = (
@@ -549,10 +613,11 @@ def poll_results(request, poll_id):
         "top_voted_option": top_voted_option,
         "qr_code_url": result_qr_code_url,
         "poll_link": result_link,
+        "user_selected_options": user_selected_options,
+        "avg_percentage": avg_percentage,  # Add average percentage to context
     }
 
     return render(request, "polls/poll_results.html", context)
-
 
 @login_required
 def add_comment(request, poll_id):
@@ -647,7 +712,6 @@ def archived_polls_view(request):
     optional_polls_archived = Poll.objects.filter(is_archived=True)
     archived_results = Poll.objects.filter(Q(is_archived_results=True))
 
-
     if query:
         archived_polls = archived_polls.filter(
             Q(title__icontains=query) | Q(description__icontains=query)
@@ -659,13 +723,13 @@ def archived_polls_view(request):
     liked_polls_set = set()
 
     # Get popular polls
-    popular_polls = (
-        Poll.objects.filter(view_count__gt=10)
-        .exclude(expiration_time__lt=current_time)
-        .filter(Q(expiration_time__lt=current_time) & Q(allow_expiration=True))
-        .distinct()
-        .order_by("-view_count")
-    )
+    popular_polls = Poll.objects.filter(
+    view_count__gt=10
+    ).filter(
+        Q(expiration_time__gte=current_time) | Q(allow_expiration=False)
+    ).exclude(
+        expiration_time__lt=current_time  # Ensure expired polls are excluded
+    ).distinct().order_by("-view_count")
 
     # Check if the user is authenticated and get liked polls
     if request.user.is_authenticated:
@@ -690,14 +754,12 @@ def archived_polls_view(request):
             "liked_polls_set": liked_polls_set,
             "query": query,
             "archived_polls": archived_polls,
-            "archived_results" : archived_results,
+            "archived_results": archived_results,
             "optional_polls_archived": optional_polls_archived,
             "popular_polls": popular_polls,
             "no_polls_message": no_polls_message,  # Include the message in the context
         },
     )
-
-
 
 
 @login_required
@@ -712,6 +774,7 @@ def archive_poll(request, poll_id):
         }
     )
 
+
 @login_required
 def archive_poll_results(request, poll_id):
     poll = get_object_or_404(Poll, id=poll_id, creator=request.user)
@@ -723,4 +786,3 @@ def archive_poll_results(request, poll_id):
             "message": "Poll archived successfully.",
         }
     )
-

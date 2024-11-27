@@ -1,0 +1,40 @@
+<div class="modal fade" id="reportModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Report Post</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="reportForm" onsubmit="submitReport(event)">
+        <div class="modal-body">
+          <input type="hidden" id="reportPostId" name="post_id" />
+          <div class="mb-3">
+            <label class="form-label">Reason for reporting</label>
+            <select name="report_type" class="form-select" required>
+              <option value="">Select a reason...</option>
+              <option value="spam">Spam</option>
+              <option value="inappropriate">Inappropriate Content</option>
+              <option value="harassment">Harassment</option>
+              <option value="copyright">Copyright Violation</option>
+              <option value="violence">Violence</option>
+              <option value="hate_speech">Hate Speech</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Additional Details</label>
+            <textarea name="description"
+                      class="form-control"
+                      rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div> 

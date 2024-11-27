@@ -73,6 +73,14 @@ class Event(models.Model):
         if not self.campus and self.organizer:
             self.campus = self.organizer
         super().save(*args, **kwargs)
+   
+
+    @property
+    def is_full(self):
+        if self.max_participants is None:
+            return False
+        return self.registrations.filter(status='registered').count() >= self.max_participants
+
     @property
     def spots_left(self):
         if self.max_participants is None:
@@ -80,10 +88,7 @@ class Event(models.Model):
         registered_count = self.registrations.filter(status='registered').count()
         return max(0, self.max_participants - registered_count)
 
-    @property
-    def is_full(self):
-        return self.max_participants is not None and self.spots_left <= 0
-        
+
 
 
 class EventRegistration(models.Model):
@@ -105,9 +110,10 @@ class EventRegistration(models.Model):
         help_text=_("The user registering for the event")
     )
     registration_date = models.DateTimeField(
-        auto_now_add=True,
-        help_text=_("When the registration was created")
-    )
+    auto_now_add=True,
+    help_text=_("When the registration was created"),
+    
+)
     attended = models.BooleanField(
         default=False,
         help_text=_("Whether the participant attended the event")
@@ -138,9 +144,8 @@ class EventRegistration(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['event', 'participant'],
-                condition=models.Q(status__in=['registered', 'waitlisted']),  # Only active registrations need to be unique
-                name='unique_active_registration'
+                fields=['event', 'participant'], 
+                name='unique_event_participant'
             )
         ]
         ordering = ['registration_date']
@@ -188,7 +193,6 @@ class EventRegistration(models.Model):
             
         super().save(*args, **kwargs)
 
-    
     def cancel_registration(self):
         """
         Cancel this registration and move up waitlisted registrations if applicable.
@@ -210,42 +214,39 @@ class EventRegistration(models.Model):
                     next_waitlisted.move_from_waitlist()
             
             return True
-        
-        def move_from_waitlist(self):
-            """
-            Attempt to move a waitlisted registration to registered status if space is available.
-            """
-            if self.status != 'waitlist':
-                return False
-                
-            current_registrations = EventRegistration.objects.filter(
-                event=self.event, 
-                status='registered'
-            ).count()
-                
-            # if not self.event.max_participants or current_registrations < self.event.max_participants:
-            #     self.status = 'registered'
-            #     self.waitlist_position = None
-            #     self.save()
-            spots_remaining = self.event.get_spots_remaining()
-            
-            if spots_remaining is None or spots_remaining > 0:
-                self.status = 'registered'
-                self.waitlist_position = None
-                self.save()  
-                # Reorder remaining waitlist
-                waitlist_registrations = EventRegistration.objects.filter(
-                    event=self.event,
-                    status='waitlist'
-                ).order_by('waitlist_position')
-                
-                for i, registration in enumerate(waitlist_registrations, 1):
-                    registration.waitlist_position = i
-                    registration.save()
-                    
-                return True
-            return False
 
+    def move_from_waitlist(self):
+        """
+        Attempt to move a waitlisted registration to registered status if space is available.
+        """
+        if self.status != 'waitlist':
+            return False
+            
+        current_registrations = EventRegistration.objects.filter(
+            event=self.event, 
+            status='registered'
+        ).count()
+        
+        # Use the new method name here as well
+        spots_remaining = self.event.get_spots_remaining()
+            
+        if spots_remaining is None or spots_remaining > 0:
+            self.status = 'registered'
+            self.waitlist_position = None
+            self.save()
+            
+            # Reorder remaining waitlist
+            waitlist_registrations = EventRegistration.objects.filter(
+                event=self.event,
+                status='waitlist'
+            ).order_by('waitlist_position')
+            
+            for i, registration in enumerate(waitlist_registrations, 1):
+                registration.waitlist_position = i
+                registration.save()
+                
+            return True
+        return False
 class Comment(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='user_comments')  # Profile is used here

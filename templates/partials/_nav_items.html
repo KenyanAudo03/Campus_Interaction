@@ -22,7 +22,7 @@
   {% url 'polls:add_polls' as add_polls_url %}
   {% url 'polls:user_dashboard' as user_dashboard_url %}
 
-  <a class="dropdown-toggle dropdown__link {% if 'polls' in request.resolver_match.namespace %}active{% endif %}">
+  <a class="dropdown-toggle1 dropdown__polls  {% if 'polls' in request.resolver_match.namespace %}active{% endif %}">
     Polls
   </a>
   <ul class="dropdown dropdown-menu-list">
@@ -53,5 +53,5 @@
 <!--=============== PROFILE ===============-->
 <li>
   {% url 'profile' as profile_url %}
-  <a href="{{ profile_url }}" class="nav__link {% if request.path == profile_url %}active{% endif %}">Profile</a>
-</li> 
+  <a href="{{ profile_url }}" class="nav__link {% if request.path|slice:":8" == '/profile' %}active{% endif %}">Profile</a>
+</li>

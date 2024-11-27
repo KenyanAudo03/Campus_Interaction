@@ -170,3 +170,29 @@ class EventViewSet(viewsets.ModelViewSet):
             'message': f'Event status updated to {new_status}',
             'new_status': new_status
         }, status=status.HTTP_200_OK)
+        
+# events/api_views.py
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+class DeleteCommentView(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self):
+        comment_id = self.kwargs.get('comment_id')
+        comment = get_object_or_404(Comment, id=comment_id)
+        if comment.user != self.request.user.profile:
+            raise PermissionDenied("You don't have permission to delete this comment")
+        return comment
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'status': 'success',
+            'message': 'Comment deleted successfully'
+        }, status=status.HTTP_200_OK)

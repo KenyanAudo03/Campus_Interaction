@@ -2,6 +2,12 @@
 {%block content %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-3d"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+  rel="stylesheet"
+/>
 <style>
   .poll_navbar {
     padding: 10px 20px;
@@ -13,13 +19,13 @@
   }
   @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
   .poll_navbar .logo {
-    font-size: 30px;
-    color: #333;
-    text-decoration: none;
-    font-family: "Roboto", sans-serif;
-    font-weight: 900;
-    font-style: normal;
-  }
+  font-size: 40px;
+  color: #333;
+  text-decoration: none;
+  font-family: "Archivo Black", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
 
   /* Button Styling */
   .create-poll-btn {
@@ -326,7 +332,7 @@
     padding: 10px 20px;
   }
 
-  input[type="text"] {
+  .search-form input[type="text"] {
     border: 1px solid #ddd;
     border-radius: 4px;
     padding: 10px;
@@ -335,12 +341,12 @@
     transition: border-color 0.3s;
   }
 
-  input[type="text"]:focus {
+  .search-form input[type="text"]:focus {
     border-color: #007bff;
     outline: none;
   }
 
-  .search {
+  .search-form .search {
     background-color: #007bff;
     color: white;
     border: none;
@@ -350,11 +356,11 @@
     transition: background-color 0.3s;
   }
 
-  .search:hover {
+  .search-form .search:hover {
     background-color: #0056b3;
   }
 </style>
-
+<div class="container py-4">
 <nav class="poll_navbar">
   <div class="navbar-buttons">
     <a href="{% url 'polls:user_dashboard' %}" class="logo">Your Polls</a>
@@ -504,7 +510,6 @@
 
         <!-- Poll Actions -->
         <div style="display: flex; align-items: center;">
-          {% if is_active %}
               <a
                   href="{% url 'polls:vote_poll' poll.id %}"
                   class="buttong view"
@@ -512,17 +517,6 @@
               >
                   <i class="fa-regular fa-eye"></i>
               </a>
-          {% else %}
-              <a
-                  href="#"
-                  class="buttong view"
-                  title="Expired - Cannot View"
-                  style="background-color: lightgray;"
-                  onclick="event.preventDefault();"
-              >
-                  <i class="fa-regular fa-eye" style="color: darkgray;"></i>
-              </a>
-          {% endif %}
           
           <a
               href="{% url 'polls:poll_results' poll.id %}"
@@ -549,39 +543,82 @@
           >
               <i class="fa-solid fa-archive" id="archive-icon-{{ poll.id }}" style="{% if poll.is_archived %}color: grey;{% endif %}"></i>
           </button>
-          
+          <style>
+            .notification {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                font-size: 14px;
+                z-index: 9999;
+                opacity: 0;
+                animation: slideIn 0.5s ease-out forwards;
+            }
+        
+            @keyframes slideIn {
+                from {
+                    bottom: -50px;
+                    opacity: 0;
+                }
+                to {
+                    bottom: 20px;
+                    opacity: 1;
+                }
+            }
+        </style>
+        
           <script>
-              function archivePoll(pollId, button) {
-                  const url = `{% url 'polls:archive_poll' 0 %}`.replace("0", pollId);
-          
-                  fetch(url, {
-                      method: 'POST',
-                      headers: {
-                          'X-CSRFToken': '{{ csrf_token }}', 
-                          'Content-Type': 'application/json'
-                      },
-                  })
-                  .then(response => response.json())
-                  .then(data => {
-                      if (data.success) {
-                          const icon = document.getElementById(`archive-icon-${pollId}`);
-                          if (data.is_archived) {
-                              icon.style.color = 'grey';
-                              button.title = "Unarchive"; 
-                          } else {
-                              icon.style.color = ''; 
-                              button.title = "Archive"; 
-                          }
-                          console.log(data.message);
-                      } else {
-                          alert('Failed to archive poll.');
-                      }
-                  })
-                  .catch(error => {
-                      console.error('Error:', error);
-                  });
-              }
-          </script>
+            function archivePoll(pollId, button) {
+                const url = `{% url 'polls:archive_poll' 0 %}`.replace("0", pollId);
+            
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}', 
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const icon = document.getElementById(`archive-icon-${pollId}`);
+                        const notification = document.createElement('div');
+                        notification.classList.add('notification');
+                        
+                        if (data.is_archived) {
+                            icon.style.color = 'grey';
+                            button.title = "Unarchive"; 
+                            notification.textContent = 'Poll archived successfully';
+                        } else {
+                            icon.style.color = ''; 
+                            button.title = "Archive"; 
+                            notification.textContent = 'Poll unarchived successfully';
+                        }
+                        
+                        // Append notification to the body
+                        document.body.appendChild(notification);
+                        
+                        // Remove the notification after 3 seconds
+                        setTimeout(() => {
+                            notification.remove();
+                        }, 3000);
+                        
+                        console.log(data.message);
+                    } else {
+                        alert('Failed to archive poll.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        </script>
+        
           {% else %}
               <a
                   href="#"
@@ -677,7 +714,6 @@
       <h2>Key Performance Indicators (KPIs)</h2>
       <div class="kpi">
           <p><i class="fas fa-chart-line"></i> Response Rate: {{ response_rate }}%</p>
-          <p><i class="fas fa-chart-bar"></i> Poll Engagement Rate: {{ engagement_rate }}%</p>
           <p><i class="fas fa-vote-yea"></i> Total Votes Cast: {{ total_votes }}</p>
           <p><i class="fas fa-comments"></i> Number of Comments: {{ total_comments }}</p>
       </div>
@@ -726,6 +762,7 @@
   </style>
   
   
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

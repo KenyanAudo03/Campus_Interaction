@@ -30,7 +30,7 @@ $(document).ready(function () {
 // Dropdown Toggle
 document.addEventListener('DOMContentLoaded', function() {
     // Handle dropdown toggles for both desktop and mobile
-    document.querySelectorAll(".dropdown-toggle").forEach((toggle) => {
+    document.querySelectorAll(".dropdown-toggle1").forEach((toggle) => {
         toggle.addEventListener("click", function(e) {
             e.preventDefault(); // Prevent default link behavior
             e.stopPropagation(); // Prevent event bubbling
@@ -42,18 +42,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const dropdownMenu = this.nextElementSibling;
             if (dropdownMenu) {
                 dropdownMenu.classList.toggle("show");
+                this.classList.toggle("active");
             }
         });
     });
 
     // Close dropdowns when clicking outside
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.dropdown-toggle')) {
+        if (!e.target.closest('.dropdown-toggle1')) {
             document.querySelectorAll('.dropdown, .dropdown-menu-list').forEach(dropdown => {
                 dropdown.classList.remove('show');
             });
-            document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
-                toggle.classList.remove('active');
+            document.querySelectorAll('.dropdown-toggle1').forEach(toggle => {
+                toggle.classList.remove('active1');
             });
         }
     });

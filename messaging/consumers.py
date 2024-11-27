@@ -139,6 +139,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         )
 
+    async def user_status(self, event):
+        await self.send(
+            text_data=json.dumps({
+                "type": "status",
+                "user": event["user"],
+                "status": event["status"]
+            })
+        )
+
 
 class StatusConsumer(AsyncWebsocketConsumer):
     async def connect(self):

@@ -344,120 +344,154 @@
           >
         </p>
         <p class="item-price">Price: Ksh {{ cart_item.item.price }}</p>
-        <style>
-          .seller-info {
-            padding: 20px;
-            background-color: #ffffff;
-            border: 1px solid #eff3f4;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease;
-          }
+        <!-- Seller information HTML structure - remains the same -->
 
-          .seller-info:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transform: translateY(-2px);
-          }
-
-          .seller-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-          }
-
-          .seller-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            overflow: hidden;
-            background: linear-gradient(45deg, #1da1f2, #0d8bd9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(29, 161, 242, 0.2);
-          }
-
-          .seller-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-
-          .seller-avatar i {
-            color: white;
-            font-size: 28px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-          }
-
-          .seller-title {
-            flex: 1;
-          }
-
-          .seller-title h6 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #0f1419;
-            margin: 0 0 4px 0;
-          }
-
-          .seller-info p {
-            font-size: 15px;
-            color: #536471;
-            line-height: 1.6;
-            margin: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-          }
-
-          /* Add status indicator for online/offline */
-          .seller-status {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-          }
-
-          .status-online {
-            background-color: #31a24c;
-          }
-
-          .status-offline {
-            background-color: #8e8e8e;
-          }
-
-          .seller-avatar-container {
-            position: relative;
-          }
-
-          /* Responsive adjustments */
-          @media (max-width: 480px) {
-            .seller-info {
-              padding: 15px;
-            }
-
-            .seller-avatar {
-              width: 50px;
-              height: 50px;
-            }
-
-            .seller-avatar i {
-              font-size: 24px;
-            }
-
-            .seller-title h6 {
-              font-size: 16px;
-            }
-
-            .seller-info p {
-              font-size: 14px;
-            }
-          }
-        </style>
+<style>
+  .seller-info {
+      padding: 1.5rem;
+      background-color: #ffffff;
+      border: 1px solid #eaecef;
+      border-radius: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s ease;
+  }
+  .seller-header {
+      display: flex;
+      align-items: flex-start;  /* Changed from center to flex-start */
+      gap: 1.25rem;
+  }
+  
+  .seller-avatar-container {
+      position: relative;
+      flex-shrink: 0;  /* Prevents avatar from shrinking */
+  }
+  
+  .seller-avatar {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      overflow: hidden;
+      background: linear-gradient(145deg, #f0f0f0, #ffffff);  /* Subtle gradient */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+  
+  .seller-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+  }
+  
+  .seller-avatar img:hover {
+      transform: scale(1.05);
+  }
+  
+  .seller-avatar i {
+      color: #657786;
+      font-size: 1.5rem;
+  }
+  
+  .seller-title {
+      flex: 1;
+      padding-top: 0.25rem;  /* Added padding top for better alignment */
+  }
+  
+  .seller-title h6 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1f36;
+      margin-bottom: 0.5rem;
+      font-family: 'DM Sans', sans-serif;  /* Using your imported font */
+  }
+  
+  .seller-title p {
+      font-size: 0.9375rem;
+      color: #4b5563;
+      line-height: 1.5;
+      margin-bottom: 0.25rem;
+  }
+  
+  .seller-detail {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-bottom: 0.25rem !important;
+  }
+  
+  /* Status indicator refinements */
+  .seller-status {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      box-shadow: 0 0 0 2px #ffffff;
+  }
+  
+  .status-online {
+      background-color: #22c55e;  /* Brighter green */
+  }
+  
+  .status-offline {
+      background-color: #9ca3af;  /* Softer gray */
+  }
+  
+  /* Responsive design */
+  @media (max-width: 640px) {
+      .seller-info {
+          padding: 1rem;
+          margin-bottom: 1rem;
+      }
+  
+      .seller-header {
+          gap: 1rem;
+      }
+  
+      .seller-avatar {
+          width: 3rem;
+          height: 3rem;
+      }
+  
+      .seller-title h6 {
+          font-size: 0.9375rem;
+      }
+  
+      .seller-title p,
+      .seller-detail {
+          font-size: 0.875rem;
+      }
+  }
+  
+  /* Dark mode support - if needed */
+  @media (prefers-color-scheme: dark) {
+      .seller-info {
+          background-color: #1f2937;
+          border-color: #374151;
+      }
+  
+      .seller-title h6 {
+          color: #f3f4f6;
+      }
+  
+      .seller-title p {
+          color: #d1d5db;
+      }
+  
+      .seller-detail {
+          color: #9ca3af;
+      }
+  
+      .seller-avatar {
+          background: linear-gradient(145deg, #2d3748, #1f2937);
+      }
+  }
+  </style>
 
         <!-- Seller information -->
         <div class="seller-info">

@@ -36,4 +36,103 @@
     top: 5px;
     right: 5px;
     z-index: 1;
-} 
+}
+
+/* Post Card Styles */
+.post-card {
+    background-color: #FAF9F6;      
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+}
+
+.post-card .rounded-circle {
+    width: 35px;
+    height: 35px;
+}
+
+/* Post Content Styles */
+.post-content {
+    min-height: 80px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Media Container Styles */
+.media-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 75%;
+    overflow: hidden;
+    max-height: 400px;
+}
+
+.post-media {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background-color: #f8f9fa;
+}
+
+/* Engagement Button Styles */
+.engagement-btn {
+    transition: all 0.2s;
+}
+
+.engagement-btn:hover {
+    transform: scale(1.1);
+}
+
+.liked {
+    color: #dc3545;
+}
+
+/* Card Component Spacing */
+.card-header,
+.card-body,
+.card-footer {
+    padding: 0.75rem 1rem;
+}
+
+/* Scrollbar Styles */
+.post-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.post-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.post-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.post-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Animation Styles */
+.highlight {
+    animation: highlight 2s ease-out;
+}
+
+@keyframes highlight {
+    0% {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+    }
+    100% {
+        background-color: transparent;
+    }
+}

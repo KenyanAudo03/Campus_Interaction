@@ -75,7 +75,7 @@ class Poll(models.Model):
     def generate_unique_link(self):
         """Generates a unique link to the poll based on its absolute URL."""
         self.link = f"http://127.0.0.1:8000{self.get_absolute_url()}"
-
+        
     def generate_qr_code(self):
         """Generates a QR code image for the poll's unique link."""
         qr = qrcode.make(self.link)
@@ -166,6 +166,7 @@ class Option(models.Model):
     )  
 
     def __str__(self):
+
         return (
             self.option_text or "Option without text"
         )  

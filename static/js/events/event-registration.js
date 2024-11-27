@@ -1,89 +1,37 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Explicitly initialize modal
+    if (document.getElementById('registrationModal')) {
+        window.registrationModal = new bootstrap.Modal(document.getElementById('registrationModal'));
+    }
+
+    // Add explicit modal opening function
+    window.openRegistrationModal = function() {
+        if (window.registrationModal) {
+            window.registrationModal.show();
+        } else {
+            console.error('Modal not initialized');
+        }
+    };
+});
+// event-registration.js
+document.addEventListener('DOMContentLoaded', function() {
     const eventId = document.getElementById('event-container')?.dataset.eventId;
     if (!eventId) return;
- 
-
-      // Safe element selection with fallback
-      function safeSelect(selector) {
-        const element = document.querySelector(selector);
-        if (!element) {
-            console.warn(`Element not found: ${selector}`);
-        }
-        return element;
-    }
 
     const registrationModal = new bootstrap.Modal(document.getElementById('registrationModal'));
     const form = document.getElementById('registrationForm');
     const alertsContainer = document.getElementById('registration-alerts');
     const statusContainer = document.getElementById('registration-status-container');
     const registerButton = document.getElementById('registerButton');
-    const submitButton = document.getElementById('submitRegistration');
-       // Prevent null errors with optional chaining and default values
-       function updateText(selector, text = '') {
-        const element = safeSelect(selector);
-        if (element) {
-            element.textContent = text;
-        }
-    }
-
-    function showAlert(type = 'info', message = '', details = '') {
-        if (!alertsContainer) return;
-        
-        alertsContainer.innerHTML = `
-            <div class="alert alert-${type}">
-                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> 
-                ${message}
-                ${details ? `<div class="mt-2 small">${details}</div>` : ''}
-            </div>
-        `;
-    }
-
-    // Track registration state
-    let isRegistrationInProgress = false;
-    
-    // Ensure form and submit button exist before adding listeners
-    if (form && submitButton) {
-        // Prevent default form submission
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleRegistration(e);
-        });
-
-        // Add click event to submit button
-        submitButton.addEventListener('click', function(e) {
-            e.preventDefault(); // Prevent default button click behavior
-            form.dispatchEvent(new Event('submit'));
-        });
-    }
-
-    async function checkEventStatus() {
-        try {
-            const response = await fetch(`/events/api/event/${eventId}/status/`);
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const data = await response.json();
-            
-            if (data.success) {
-                updateStatusDisplay(data);
-                if (registerButton) {
-                    updateRegistrationButton(data);
-                }
-            }
-        } catch (error) {
-            console.error('Error checking event status:', error);
-        }
-    }
-
-    function updateRegistrationButton(data) {
+    function updateRegistrationButton(event) {
         if (!registerButton) return;
     
-        const maxParticipants = data.max_participants;
-        const spotsLeft = data.spots_left;
+        const maxParticipants = event.max_participants;
+        const spotsRemaining = event.spots_left;  // The API still returns as spots_left
     
         registerButton.disabled = false;
     
-        if (maxParticipants === null || spotsLeft > 0) {
+        if (maxParticipants === null || spotsRemaining > 0) {
             registerButton.classList.remove('btn-warning');
             registerButton.classList.add('btn-success');
             registerButton.innerHTML = '<i class="fas fa-user-plus"></i> Register for Event';
@@ -93,91 +41,28 @@ document.addEventListener('DOMContentLoaded', function() {
             registerButton.innerHTML = '<i class="fas fa-user-plus"></i> Join Waiting List';
         }
     }
-
-    function updateStatusDisplay(data) {
-        try {
-            const spotsCounter = document.getElementById('spots-counter');
-            const waitlistCounter = document.getElementById('waitlist-counter');
-            
-            if (spotsCounter) {
-                spotsCounter.textContent = data.spots_left === null ? 'Unlimited' : data.spots_left;
-            }
-            
-            if (waitlistCounter && typeof data.waitlist_count !== 'undefined') {
-                waitlistCounter.textContent = `${data.waitlist_count} people`;
-                if (waitlistCounter.parentElement) {
-                    waitlistCounter.parentElement.style.display = 
-                        data.waitlist_count > 0 ? 'flex' : 'none';
-                }
-            }
-        } catch (error) {
-            console.error('Error updating status display:', error);
-        }
+    
+    // Add this function to your event-registration.js
+function openRegistrationModal() {
+    if (registrationModal) {
+        registrationModal.show();
     }
-    async function handleRegistration(e) {
-        e.preventDefault();
-        
-        // Prevent multiple submissions
-        if (isRegistrationInProgress) return;
-        
-        // Clear previous alerts
+}
+    // Registration form submission
+    document.getElementById('submitRegistration')?.addEventListener('click', handleRegistration);
+    
+    // Cancel registration
+    document.getElementById('cancelRegistrationBtn')?.addEventListener('click', handleCancellation);
+
+    // Periodic status check
+    setInterval(() => checkEventStatus(), 30000); // Every 30 seconds
+    
+    async function handleRegistration(event) {
+        event.preventDefault();
         clearAlerts();
-        
-        // Get form elements
-        const nameInput = document.getElementById('id_name');
-        const emailInput = document.getElementById('id_email');
-        
-        // Validate inputs
-        let isValid = true;
-        
-        if (!nameInput.value.trim()) {
-            nameInput.classList.add('is-invalid');
-            document.getElementById('name-error').textContent = 'Name is required';
-            isValid = false;
-        } else {
-            nameInput.classList.remove('is-invalid');
-        }
-        
-        if (!emailInput.value.trim()) {
-            emailInput.classList.add('is-invalid');
-            document.getElementById('email-error').textContent = 'Email is required';
-            isValid = false;
-        } else {
-            // Optional: Add basic email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(emailInput.value.trim())) {
-                emailInput.classList.add('is-invalid');
-                document.getElementById('email-error').textContent = 'Invalid email format';
-                isValid = false;
-            } else {
-                emailInput.classList.remove('is-invalid');
-            }
-        }
-        
-        // If validation fails, stop submission
-        if (!isValid) return;
-        // Clear previous alerts
-        clearAlerts();
-        
-        // Disable submit button and show loading state
-        isRegistrationInProgress = true;
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         
         try {
-            // Validate form data client-side
-            const nameInput = document.getElementById('id_name');
-            const emailInput = document.getElementById('id_email');
-            
-            if (!nameInput.value.trim() || !emailInput.value.trim()) {
-                throw new Error('Please fill in all required fields');
-            }
-            
             const formData = new FormData(form);
-            
-            // Add additional debugging information
-            formData.append('debug', 'frontend_submission');
-            
             const response = await fetch(`/events/event/${eventId}/register/`, {
                 method: 'POST',
                 body: formData,
@@ -187,66 +72,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Parse response
             const data = await response.json();
             
-            // Handle response
             if (data.success) {
                 showAlert('success', data.message);
-                
-                // Update UI based on registration status
-                if (data.status === 'waitlist') {
-                    document.getElementById('registration-status').innerHTML = 
-                        `You're on the waiting list (Position: ${data.waitlist_position})`;
-                } else {
-                    document.getElementById('registration-status').innerHTML = 
-                        "You're registered!";
-                }
-                
-<<<<<<< HEAD
-                // Update UI based on registration status
-                if (data.status === 'waitlist') {
-                    document.getElementById('registration-status').innerHTML = 
-                        `You're on the waiting list (Position: ${data.waitlist_position})`;
-                } else {
-                    document.getElementById('registration-status').innerHTML = 
-                        "You're registered!";
-                }
-                
-=======
->>>>>>> 87a0b7bd (Refined the codebase)
                 setTimeout(() => {
                     registrationModal.hide();
-                    location.reload();
+                    updateUI(data);
                 }, 1500);
             } else {
-                // Handle specific error
-                throw new Error(data.error || 'Registration failed');
+                handleErrors(data.error);
             }
         } catch (error) {
-            // Show error message
-            showAlert('danger', error.message || 'An unexpected error occurred');
-            
-            // Log error for debugging
             console.error('Registration error:', error);
-        } finally {
-            // Reset button state
-            isRegistrationInProgress = false;
-            submitButton.disabled = false;
-            submitButton.innerHTML = 'Register';
+            showAlert('danger', 'An unexpected error occurred. Please try again.');
         }
     }
 
+    // More robust error handling
+    function handleErrors(errors) {
+        if (typeof errors === 'string') {
+            showAlert('danger', errors);
+            return;
+        }
+        
+        // Handle both server-side and form validation errors
+        Object.entries(errors).forEach(([field, messages]) => {
+            const input = document.getElementById(`id_${field}`);
+            const feedback = document.getElementById(`${field}-error`);
+            if (input && feedback) {
+                input.classList.add('is-invalid');
+                feedback.textContent = Array.isArray(messages) ? messages.join(' ') : messages;
+            }
+        });
+        
+        // If no specific field errors, show a general error
+        if (Object.keys(errors).length === 0) {
+            showAlert('danger', 'Registration failed. Please check your details.');
+        }
+    }
 
-    async function handleCancellation(e) {
-        e.preventDefault();
+   
+
+    async function handleCancellation() {
         if (!confirm('Are you sure you want to cancel your registration?')) return;
-        
-        const cancelButton = e.target.closest('#cancelRegistrationBtn');
-        if (!cancelButton) return;
-        
-        cancelButton.disabled = true;
-        cancelButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
         
         try {
             const response = await fetch(`/events/event/${eventId}/cancel/`, {
@@ -257,147 +126,89 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
             const data = await response.json();
             
             if (data.success) {
-                showAlert('success', 'Registration cancelled successfully');
-                // Clear any cached registration data
-                clearRegistrationState();
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
+                location.reload(); // Refresh to update UI
             } else {
-                throw new Error(data.error || 'Failed to cancel registration');
+                showAlert('danger', data.error || 'Failed to cancel registration');
             }
         } catch (error) {
-            console.error('Cancellation error:', error);
-            showAlert('danger', error.message || 'An error occurred while cancelling registration');
-            cancelButton.disabled = false;
-            cancelButton.innerHTML = '<i class="fas fa-times"></i> Cancel Registration';
+            showAlert('danger', 'An error occurred while cancelling registration');
         }
     }
-
-    // New function to clear registration state
-    function clearRegistrationState() {
-        // Reset form if it exists
-        if (form) {
-            form.reset();
+    
+  
+    async function checkEventStatus() {
+        try {
+            const response = await fetch(`/events/api/event/${eventId}/status/`);
+            const data = await response.json();
+            
+            if (data.success) {
+                updateStatusDisplay(data);
+                updateRegistrationButton(data);
+            }
+        } catch (error) {
+            console.error('Error checking event status:', error);
+        }
+    }
+    
+    function updateStatusDisplay(data) {
+        const spotsCounter = document.getElementById('spots-counter');
+        const waitlistCounter = document.getElementById('waitlist-counter');
+        
+        if (spotsCounter) {
+            spotsCounter.textContent = data.spots_left === null ? 'Unlimited' : data.spots_left;
         }
         
-        // Clear any error messages
-        clearAlerts();
+        if (waitlistCounter) {
+            waitlistCounter.textContent = `${data.waitlist_count} people`;
+            waitlistCounter.parentElement.style.display = data.waitlist_count > 0 ? 'flex' : 'none';
+        }
+    }
+    
+    function updateUI(data) {
+        // Update registration status
+        if (statusContainer) {
+            const statusHTML = `
+                <div class="alert alert-success mb-3">
+                    <i class="fas fa-check-circle"></i> 
+                    ${data.status === 'registered' ? 
+                      'You\'re registered!' : 
+                      `You're on the waiting list (Position: ${data.waitlist_position})`}
+                </div>
+                <button type="button" 
+                        class="btn btn-danger btn-lg w-100" 
+                        id="cancelRegistrationBtn"
+                        data-event-id="${eventId}">
+                    <i class="fas fa-times"></i> Cancel Registration
+                </button>
+            `;
+            statusContainer.innerHTML = statusHTML;
+            
+            // Reattach cancel event listener
+            document.getElementById('cancelRegistrationBtn')?.addEventListener('click', handleCancellation);
+        }
         
-        // Remove any invalid states from form fields
+        // Update spots and waitlist info
+        checkEventStatus();
+    }
+    
+    function clearAlerts() {
+        if (alertsContainer) alertsContainer.innerHTML = '';
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
         document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-        
-        // Reset registration button state
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = 'Register';
-        }
     }
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-    // Update the showAlert function to handle waitlist messages
-function showAlert(type, message, details = '') {
-    if (!alertsContainer) return;
     
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> 
-        ${message}
-        ${details ? `<div class="mt-2 small">${details}</div>` : ''}
-    `;
-    alertsContainer.innerHTML = '';
-    alertsContainer.appendChild(alert);
-}
-
-// In the handleRegistration success handler:
-if (data.success) {
-    const message = data.message;
-    const details = data.status === 'waitlist' 
-        ? `Your position on the waiting list: #${data.waitlist_position}` 
-        : '';
-    showAlert('success', message, details);
-    
-    setTimeout(() => {
-        registrationModal.hide();
-        location.reload();
-    }, 2000);
-}
-=======
-    // function showAlert(type, message) {
-    //     if (!alertsContainer) return;
-        
-    //     alertsContainer.innerHTML = '';
-        
-    //     const alert = document.createElement('div');
-    //     alert.className = `alert alert-${type}`;
-    //     alert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> ${message}`;
-    //     alertsContainer.appendChild(alert);
-    // }
-
-    function showAlert(type, message, details = '') {
+    function showAlert(type, message) {
         if (!alertsContainer) return;
         
         const alert = document.createElement('div');
         alert.className = `alert alert-${type}`;
-        alert.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> 
-            ${message}
-            ${details ? `<div class="mt-2 small">${details}</div>` : ''}
-        `;
-        alertsContainer.innerHTML = '';
+        alert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> ${message}`;
         alertsContainer.appendChild(alert);
     }
->>>>>>> 8c524faa (Implemented waitlist registration)
-=======
-
-    // Update the showAlert function to handle waitlist messages
-function showAlert(type, message, details = '') {
-    if (!alertsContainer) return;
     
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> 
-        ${message}
-        ${details ? `<div class="mt-2 small">${details}</div>` : ''}
-    `;
-    alertsContainer.innerHTML = '';
-    alertsContainer.appendChild(alert);
-}
-
-// In the handleRegistration success handler:
-if (data.success) {
-    const message = data.message;
-    const details = data.status === 'waitlist' 
-        ? `Your position on the waiting list: #${data.waitlist_position}` 
-        : '';
-    showAlert('success', message, details);
-    
-    setTimeout(() => {
-        registrationModal.hide();
-        location.reload();
-    }, 2000);
-}
->>>>>>> 87a0b7bd (Refined the codebase)
-
-    function clearAlerts() {
-        if (alertsContainer) {
-            alertsContainer.innerHTML = '';
-        }
-        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
-        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-    }
-
     function handleErrors(errors) {
         if (typeof errors === 'string') {
             showAlert('danger', errors);
@@ -413,26 +224,6 @@ if (data.success) {
             }
         }
     }
-
-    // Event Listeners
-    form?.addEventListener('submit', handleRegistration);
-    
-    // Add click handler for submit button
-    submitButton?.addEventListener('click', () => {
-        form?.dispatchEvent(new Event('submit'));
-    });
-    
-    // Add modal hidden event listener to clear state
-    document.getElementById('registrationModal')?.addEventListener('hidden.bs.modal', clearRegistrationState);
-    
-    // Attach cancel button listener
-    const cancelButton = document.getElementById('cancelRegistrationBtn');
-    if (cancelButton) {
-        cancelButton.addEventListener('click', handleCancellation);
-    }
-    
-    // Initial status check
-    checkEventStatus();
-    // Periodic status check
-    setInterval(checkEventStatus, 30000);
+     // Attach event listener to form submission
+    form.addEventListener('submit', handleRegistration);
 });
