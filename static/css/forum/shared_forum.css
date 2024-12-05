@@ -278,37 +278,97 @@
 
 @media (max-width: 768px) {
   .forums-header {
-      padding: 1rem;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border-radius: 0 0 1rem 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .header-main {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 1rem;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
   }
 
-  .header-actions {
-      justify-content: space-between;
-  }
-
-  .header-toolbar {
-      flex-direction: column;
-      gap: 1rem;
-  }
-
-  .category-filters {
-      overflow-x: auto;
-      padding-bottom: 0.5rem;
-      -webkit-overflow-scrolling: touch;
+  .header-left h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, var(--primary-color), #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .forum-stats {
-      flex-wrap: wrap;
-      gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .header-actions {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .search-wrapper {
+    order: -1;
+    margin-bottom: 1rem;
+  }
+
+  .search-bar {
+    border-radius: 1rem;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .category-filters {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  }
+
+  .category-filters::-webkit-scrollbar {
+    display: none; /* WebKit */
+  }
+
+  .filter-btn {
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .create-forum-btn {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.95rem;
   }
 
   .btn-text {
-      display: none;
+    display: inline-block;
+  }
+}
+
+/* Additional mobile-friendly enhancements */
+@media (max-width: 480px) {
+  .header-left h1 {
+    font-size: 1.75rem;
+  }
+
+  .forum-stats {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 0.75rem;
   }
 }
 .forum-grid {
@@ -385,7 +445,7 @@
   padding: 1.5rem;
 }
 
-.forum-card-content h2 {
+.forum-card-content  {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);

@@ -1,30 +1,42 @@
 // First, check if we've already initialized to prevent multiple attachments
 if (!window.eventListenersInitialized) {
     window.eventListenersInitialized = true;
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         // Remove any existing event listeners
         document.querySelectorAll('.delete-event-btn').forEach(button => {
             button.replaceWith(button.cloneNode(true));
         });
-        
+
         // Add new event listeners
         document.querySelectorAll('.delete-event-btn').forEach(button => {
-            button.addEventListener('click', handleDeleteEvent);
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const eventId = this.getAttribute('data-event-id');
+                const modal = new bootstrap.Modal(document.getElementById('deleteEventModal'));
+
+                // Store event ID in a data attribute on the modal confirm button
+                document.getElementById('confirmDeleteBtn').setAttribute('data-event-id', eventId);
+
+                modal.show();
+            });
+        });
+
+        // Handle the modal confirmation button click
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+            const eventId = this.getAttribute('data-event-id');
+            await handleDeleteEvent(eventId);
+            
+            // Close the modal after the event is handled
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('deleteEventModal'));
+            modalInstance.hide();
         });
     });
 }
 
-// Separate the handler function for clarity
-async function handleDeleteEvent(e) {
-    e.preventDefault();
-    
-    if (!confirm('Are you sure you want to delete this event?')) {
-        return;
-    }
-
-    const eventId = this.getAttribute('data-event-id');
-    
+// Handle event deletion
+async function handleDeleteEvent(eventId) {
     try {
         const response = await fetch(`/events/${eventId}/delete/`, {
             method: 'DELETE',
@@ -38,8 +50,10 @@ async function handleDeleteEvent(e) {
         const data = await response.json();
 
         if (response.ok) {
-            console.log("Redirecting to event list...");
-            window.location.href = '/events/';
+            showNotification('Event deleted successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/events/';
+            }, 1500);
         } else {
             showNotification(data.message || 'Failed to delete event', 'error');
         }
@@ -67,5 +81,5 @@ function showNotification(message, type) {
     
     setTimeout(() => {
         alertDiv.remove();
-    }, 2000);
+    }, 1000);
 }

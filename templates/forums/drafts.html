@@ -1,0 +1,497 @@
+{% extends 'base.html' %} {% block title %}Drafts - {{ forum.name }} Forum 
+{% endblock %} {% block content %}{% load custom_filters %} {% load static %}
+
+<link rel="stylesheet" href="{% static 'css/forum/forum_detail.css' %}" />
+<!-- Include Plyr CSS -->
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+<link rel="stylesheet" href="{% static 'css/forum/add_topic.css' %}" />
+
+<!-- Include Plyr JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+<!-- Posting -->
+<script src="{% static 'js/forum/forum_details.js' %}"></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100..900&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- Forum Header -->
+<div class="py-5" style="position: relative; color: #fff">
+  {% if forum.display_picture %}
+  <div
+    style="
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    "
+  >
+    <img
+      src="{{ forum.display_picture.url }}"
+      alt="{{ forum.name }}"
+      style="
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.7);
+      "
+    />
+  </div>
+  {% else %}
+  <div
+    style="
+      background-color: #4b00ff;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    "
+  ></div>
+  {% endif %}
+
+  <div class="container forum-header">
+    <div class="row">
+      <div class="col-lg-6">
+        <h1 class="display-4" style="text-transform: uppercase">
+          {{ forum.name }}
+        </h1>
+        <p class="lead">
+          <span class="forum-description">
+            Stay up to date with the latest discussions and news in the
+            <span
+              style="
+                text-transform: uppercase;
+                font-style: italic;
+                font-size: 14px;
+              "
+            >
+              {{ forum.name }}</span
+            >
+            Forum <i class="fa-brands fa-forumbee"></i>
+          </span>
+          <br />
+          <span class="forum-text">{{ forum.description }} </span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- JOIN GROUP... -->
+<div class="subscribe">
+  <div class="">
+    <div class="sub-message">
+      <div class="discussion-comments">
+        <p class="back-btn">
+          <a
+            href="{% url 'forums:create_post' forum.id %}"
+            class="forum-card-overlay"
+            ><i class="fa-solid fa-arrow-left"></i
+          ></a>
+        </p>
+        <p id="member-count">{{ forum.member_count }} <span>Members</span></p>
+        <p id="posts-count">{{ comment_count }} <span>Comments</span></p>
+        <p id="topics-count" class="topics-count">
+          {{ post_count }} <span>Topics</span>
+        </p>
+      </div>
+      <div class="search-container">
+        <div class="input-group">
+          <input
+            type="text"
+            autocomplete="off"
+            class="form-control"
+            id="forum-search-input"
+            placeholder="Search {{ forum.name }}"
+            data-forum-id="{{ forum.id }}" 
+          />
+        </div>
+        <!-- This div will hold the search suggestions -->
+        <div id="search-suggestions" class="search-suggestions"></div>
+      </div>
+      <div class="subscribe-message" id="membership-controls">
+        <!-- Non-member controls -->
+        <div
+          id="non-member-controls"
+          class="{% if membership %}hidden{% endif %}"
+        >
+          <button id="subscribe-btn" class="subscribe-btn">Subscribe</button>
+        </div>
+        <!-- Member controls -->
+        <div
+          id="member-controls"
+          class="{% if not membership or membership.role != 'member' %}hidden{% endif %}"
+        >
+        <button id="messages-btn" class="messages-btn"><i class="fa-solid fa-message"></i></button>
+        <button id="messages-btn" class="create" ><a href="{% url 'forums:create_post' forum_id=forum.id %}"><i class="fa-solid fa-plus"></i> Topic</a></button>
+          {% if forum.created_by != request.user %}
+          <button id="leave-btn" class="leave-btn">Leave</button>
+          {% endif %}
+        </div>
+        <!-- Admin controls -->
+        <div
+          id="admin-controls"
+          class="{% if not membership or membership.role != 'admin' %}hidden{% endif %}"
+        >
+          <button id="messages-btn-admin" class="messages-btn"><i class="fa-solid fa-message"></i></button>
+          <button id="messages-btn" class="create"><a href="{% url 'forums:create_post' forum_id=forum.id %}"><i class="fa-solid fa-plus"></i> Topic</a></button>
+          <button id="manage-btn" class="manage-btn"  class="manage-btn"><a href="{% url 'forums:manage_forum' forum_id=forum.id %}">Manage</a>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Drafts AND MEMBERS LIST -->
+<div class="post-container">
+  {% include "forums/members.html"%}
+  <div class="main-content">
+    <!-- SORTING -->
+    <div class="content-header">
+      <h2 id="post-count-heading">{{ drafts_count }} Drafts</h2>
+    <span style="font-size: 16px; font-weight: bold;">Auto-deletion after 1 week</span>
+      
+      <select class="sort-dropdown" id="sort-dropdown">
+        <option value="">Default Order</option>
+        <option value="newest">Newest First</option>
+      </select>
+    </div>
+    <div data-posts-container class="posts-container">
+      {% if drafts %}
+      {% for draft in drafts %}
+
+      <article class="post" id="post-{{ draft.id }}">
+        <div class="author__options">
+          <div class="post-author">
+            <img
+              src="{{ draft.user.profile.profile_pic.url }}"
+              alt="{{ draft.user.username }} Profile"
+            />
+
+            <div class="author-details">
+              <div class="author-name">
+                {{ draft.user.username }}
+                <span
+                  class="post-time"
+                  data-created-at="{{ draft.created_at|date:'c' }}"
+                >
+                  {{ draft.created_at|short_timesince }}
+                </span>
+              </div>
+              <div class="post-meta">
+                <span class="user-role"> {{ draft.user.username }} </span>
+
+                <span class="separator">•</span>
+                <span class="publish-info">
+                  Published in {% if forum.name|length > 15 %}{{ forum.name|slice:":30" }}...{% else %}{{ forum.name }}{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+          <!-- Post Options Menu -->
+          <div class="post-options">
+            <button class="options-btn" onclick="toggleMenu('{{ post.id }}')">
+              <i class="fa-solid fa-ellipsis"></i>
+            </button>
+            <div class="options-menu" id="menu-{{ post.id }}">
+              {% if user == draft.user %}
+              <button class="menu-item">
+                <i class="fa-solid fa-pen"></i> Edit
+              </button>
+              <button class="menu-item post-btn" data-id="{{ draft.id }}">
+                <i class="fa fa-upload" aria-hidden="true"></i> Post
+              </button>
+              {% else %} {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="post-content">
+          <h4>{{draft.title}}</h4>
+          <p>{{ draft.content|urlize|truncatewords:60 }}</p>
+
+          {% if draft.image %}
+          <div class="media-container">
+            <img src="{{ draft.image.url }}" alt="Post image" />
+          </div>
+          <style>
+            .media-container.videos {
+              max-width: 100%;
+              width: 100%;
+              height: 400px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+
+            .plyr {
+              width: 100%;
+              height: 100%;
+            }
+            video {
+              width: 100%;
+              height: 230%;
+              object-fit: contain;
+            }
+
+            @media (max-width: 768px) {
+              .media-container.videos {
+                height: 200px;
+              }
+            }
+
+            @media (max-width: 480px) {
+              .media-container.videos {
+                height: 200px;
+              }
+            }
+            .player {
+              opacity: 0.7;
+              transition: opacity 0.3s ease;
+            }
+            .player.video-loaded {
+              opacity: 1;
+            }
+          </style>
+          {% elif draft.video %}
+          <div class="media-container videos">
+            <video
+              controls
+              crossorigin
+              playsinline
+              id="player-{{ post.id }}"
+              class="player"
+            >
+              <source src="{{ draft.video.url }}" type="video/mp4" />
+            </video>
+          </div>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %} {% else %}
+
+      <p>You don't have any drafts yet for this forum.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="sidebar">{% include "forums/forums.html"%}</aside>
+</div>
+
+<!-- IMAGE MODEL -->
+<div
+  id="image-modal"
+  class="hidden fixed inset-0 z-[1000] bg-black/80 flex items-center justify-center p-4"
+>
+  <div
+    class="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+  >
+    <img
+      id="modal-image"
+      src=""
+      alt="Enlarged image"
+      class="max-w-full max-h-full object-contain"
+    />
+    <button
+      id="close-modal"
+      class="absolute top-[-40px] right-0 text-white text-3xl hover:text-gray-300 focus:outline-none"
+    >
+      &times;
+    </button>
+  </div>
+</div>
+
+<!-- MDB Modal for Confirmation -->
+<div
+  class="modal fade"
+  id="deletePostModal"
+  tabindex="-1"
+  aria-labelledby="deletePostModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deletePostModalLabel"></h5>
+      </div>
+      <div class="modal-body">Are you sure you want to delete this post?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Partial JS-->
+{% include "forums/all_scripts.html"%}
+<!-- Video Player -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const videos = document.querySelectorAll(".post .player");
+    const posts = document.querySelectorAll(".post");
+    let activePlayer = null;
+    const plyrInstances = Array.from(videos).map((video) => {
+      const plyrInstance = new Plyr(video, {
+        controls: [
+          "play-large",
+          "play",
+          "progress",
+          "current-time",
+          "mute",
+          "volume",
+          "fullscreen",
+        ],
+        settings: ["quality", "speed"],
+        ratio: "16:9",
+        responsive: true,
+        autoplay: false,
+        muted: true,
+        preload: "metadata",
+        loadSprite: true,
+        iconPrefix: "plyr",
+        blankVideo: "",
+      });
+
+      // Add custom hover functionality
+      const postElement = video.closest(".post");
+      if (postElement) {
+        postElement.addEventListener("mouseenter", () => {
+          // Pause all other videos
+          plyrInstances.forEach((instance) => {
+            if (instance !== plyrInstance) {
+              instance.pause();
+            }
+          });
+
+          plyrInstance.play().catch((error) => {
+            console.error("Error playing video on hover:", error);
+          });
+        });
+
+        postElement.addEventListener("mouseleave", () => {
+          plyrInstance.pause();
+        });
+      }
+
+      return plyrInstance;
+    });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const videoElement = entry.target;
+          const plyrInstance = plyrInstances.find(
+            (p) => p.elements.container === videoElement.closest(".plyr")
+          );
+
+          if (entry.isIntersecting) {
+            // Pause any currently active player
+            plyrInstances.forEach((instance) => {
+              if (instance !== plyrInstance) {
+                instance.pause();
+              }
+            });
+            plyrInstance.play().catch((error) => {
+              console.error("Error attempting to play video:", error);
+            });
+          } else {
+            plyrInstance.pause();
+          }
+        });
+      },
+      {
+        threshold: 0.5,
+        rootMargin: "0px 0px 100px 0px",
+      }
+    );
+    videos.forEach((video) => {
+      video.preload = "metadata";
+      video.addEventListener("loadedmetadata", () => {
+        video.classList.add("video-loaded");
+      });
+
+      observer.observe(video);
+    });
+    if ("loading" in HTMLVideoElement.prototype) {
+      videos.forEach((video) => {
+        video.loading = "lazy";
+      });
+    }
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const postButtons = document.querySelectorAll(".post-btn");
+
+    postButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const draftId = button.getAttribute("data-id");
+
+        // Send AJAX request to post the draft
+        fetch(`/forums/post_draft/${draftId}/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCSRFToken(), // Use Django's CSRF protection
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}), // Send data if necessary
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              // Update UI without reload
+              const draftElement = document.getElementById(`post-${draftId}`);
+              if (draftElement) {
+                draftElement.remove(); // Remove draft from the list
+              }
+              alert(data.message); // Optionally show success message
+            } else {
+              alert(data.message); // Show error message
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      });
+    });
+  });
+
+  // Function to get CSRF token from the cookie (Django-specific)
+  function getCSRFToken() {
+    const name = "csrftoken";
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + "=")) {
+        return cookie.substring(name.length + 1);
+      }
+    }
+    return "";
+  }
+</script>
+
+<script>
+  setTimeout(function() {
+    const notification = document.getElementById('auto-deletion-notification');
+    if (notification) {
+      notification.style.display = 'none';
+    }
+  }, 5000); 
+</script>
+
+{% endblock %}

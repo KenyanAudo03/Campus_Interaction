@@ -202,6 +202,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+    function enhancedValidation(field) {
+    const validationRules = {
+        title: {
+            minLength: 5,
+            maxLength: 100,
+            message: 'Title must be between 5 and 100 characters'
+        },
+        description: {
+            minLength: 20,
+            maxLength: 500,
+            message: 'Description must be between 20 and 500 characters'
+        }
+    };
+
+    const rule = validationRules[field.name];
+    if (rule) {
+        const value = field.value.trim();
+        if (value.length < rule.minLength || value.length > rule.maxLength) {
+            field.setCustomValidity(rule.message);
+            return false;
+        }
+    }
+    field.setCustomValidity('');
+    return true;
+}
+    
 
     // Initialize the first step
     showStep(1);

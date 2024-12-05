@@ -1,0 +1,77 @@
+<!-- Other Forums -->
+
+<div class="sidebar-header">
+    <h2 style="text-transform: uppercase">Alternative Forums to Explore</h2>
+  </div>
+  <div class="member-list" style="border-top: 1px solid #ebeef0;">
+    <a href="{% url 'forums:forum_create' %}">
+      <div class="member" style="border-bottom: 1px solid #ebeef0;">
+        <div class="image-i">
+          <i class="fa-brands fa-forumbee"></i>
+        </div>
+        <div class="member-info">
+          <div class="member-name" style="text-transform: uppercase">
+          Create a New Forum
+        </div>
+        <div class="member-likes">
+          create your own forum
+        </div>
+        </div>
+        <div class="member-role">
+        <span class="role-badge" style="background-color: #57606a">
+          <i class="fa-solid fa-plus"></i>
+        </span>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="members-list">
+    {% for forum_detail in forum_details %}
+    <a href="{% url 'forums:forum_detail' forum_detail.forum.id %}">
+      <div
+        class="member {% if forum_detail.is_current_forum %}highlighted-forum{% endif %}"
+        style="border-bottom: 1px solid #ebeef0;"
+      >
+        {% if forum_detail.forum.display_picture %}
+        <img
+          src="{{ forum_detail.forum.display_picture.url }}"
+          alt="{{ member_info.user.username }}"
+        />
+        {% else %}
+        <div class="image-i">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        {% endif %}
+        <div class="member-info">
+          <div class="member-name" style="text-transform: uppercase">
+            {{ forum_detail.forum.name|slice:":18" }} 
+            {% if forum_detail.forum.name|length > 18 %}...{% endif %}
+          </div>
+          <div class="member-likes">
+            {{ forum_detail.total_members }} members, 
+            {{ forum_detail.forum.forums_posts.count }} posts
+          </div>
+        </div>
+        <div class="member-role">
+          {% if forum_detail.user_is_main_admin %}
+          <span class="role-badge" style="background-color: #007bff">
+            <i class="fas fa-crown"></i>
+          </span>
+          {% elif forum_detail.user_is_admin %}
+          <span class="role-badge" style="background-color: #28a745">
+            <i class="fas fa-user-shield"></i>
+          </span>
+          {% elif forum_detail.user_is_member %}
+          <span class="role-badge" style="background-color: #17a2b8">
+            <i class="fas fa-user"></i>
+          </span>
+          {% else %}
+          <span class="role-badge" style="background-color: #c0111a">
+            <i class="fas fa-ban"></i>
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>

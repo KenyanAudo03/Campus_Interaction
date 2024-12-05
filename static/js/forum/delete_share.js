@@ -70,9 +70,11 @@ function fallbackCopyText(text) {
 }
 
 function sharePost(postId) {
-  const url = `${window.location.origin}/posts/${postId}`;
+  const forumId = document.querySelector('[data-forum-id]').getAttribute('data-forum-id');
+  const url = `${window.location.origin}/forums/forum/${forumId}/post/${postId}`;
   copyToClipboard(url);
 }
+
 function deletePost(postId) {
   // Show the custom MDB confirmation modal
   $("#deletePostModal").modal("show");
@@ -157,3 +159,58 @@ function showNotification(message, type = "info") {
     setTimeout(() => notification.remove(), 300);
   }, 3000);
 }
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const saveButton = document.getElementById('download_image_video');
+  const mediaContainer = document.querySelector('.media-container');
+  
+  // Function to generate a random filename starting with camphub
+  function generateRandomFilename(type) {
+    const randomString = Math.random().toString(36).substring(2, 10);
+    return `camphub_${type}_${randomString}`;
+  }
+  
+  if (saveButton && mediaContainer) {
+    saveButton.addEventListener('click', () => {
+      let downloadUrl = '';
+      let fileName = '';
+      // Check for image
+      const image = mediaContainer.querySelector('img');
+      if (image) {
+        downloadUrl = image.src;
+        fileName = generateRandomFilename('image') + '.jpg';
+      }
+      // Check for video
+      const video = mediaContainer.querySelector('video');
+      if (video) {
+        const source = video.querySelector('source');
+        if (source) {
+          downloadUrl = source.src;
+          fileName = generateRandomFilename('video') + '.mp4';
+        }
+      }
+      // If media found, trigger download
+      if (downloadUrl) {
+        fetch(downloadUrl)
+          .then(response => response.blob())
+          .then(blob => {
+            // Create a temporary anchor element to trigger download
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          })
+          .catch(error => {
+            console.error('Download failed:', error);
+            alert('Failed to download the media file.');
+          });
+      } else {
+        alert('No media found to download.');
+      }
+    });
+  }
+});

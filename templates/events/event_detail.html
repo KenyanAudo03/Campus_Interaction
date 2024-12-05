@@ -159,12 +159,28 @@
 </div>
 
 
-  <!-- Right Column - Event Actions and Info -->
-  <div class="col-lg-4">
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteEventModalLabel">Confirm Deletion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to delete this event? This action cannot be undone.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
+ 
 {# Update this section in your event_detail.html where the registration button is #}
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm mb-3">
 <div class="card-body">
 <div id="registration-status-container">
 {% if not user_registered %}
@@ -224,66 +240,6 @@
 </div>
 </div>
 
-
-                 {% comment %} <div class="card-body modern-card">
-    <div id="registration-status-container">
-        {% if not user_registered %}
-            {% if event.spots_left > 0 or not event.max_participants %}
-                <button type="button" 
-                        class="btn modern-register-btn w-100" 
-                        data-event-id="{{ event.id }}"  
-                        onclick="openRegistrationModal()"
-                        data-bs-toggle="modal" 
-                        data-bs-target="#registrationModal"
-                        id="registerButton">
-                    <i class="fas fa-user-plus me-2"></i> Register for Event
-                </button>
-            {% else %}
-                <button type="button" 
-                        class="btn modern-waitlist-btn w-100" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#registrationModal"
-                        id="registerButton">
-                    <i class="fas fa-user-clock me-2"></i> Join Waiting List
-                </button>
-            {% endif %}
-        {% else %}
-            <div class="alert alert-success modern-alert mb-3">
-                <i class="fas fa-check-circle me-2"></i> 
-                {% if registration.status == 'registered' %}
-                    You're registered!
-                {% else %}
-                    You're on the waiting list (Position: {{ registration.waitlist_position }})
-                {% endif %}
-            </div>
-            <button type="button" 
-                    class="btn modern-cancel-btn w-100" 
-                    id="cancelRegistrationBtn"
-                    data-event-id="{{ event.id }}">
-                <i class="fas fa-times me-2"></i> Cancel Registration
-            </button>
-        {% endif %}
-    </div>
-
-    <div id="event-status" class="mt-4">
-        {% if event.max_participants %}
-            <div class="d-flex justify-content-between align-items-center modern-status">
-                <span>Available Spots:</span>
-                <span id="spots-counter" class="badge modern-badge-primary">
-                    {{ event.spots_left }}
-                </span>
-            </div>
-            {% if event.waitlist_count > 0 %}
-                <div class="d-flex justify-content-between align-items-center mt-2 modern-status">
-                    <span>Waitlist:</span>
-                    <span id="waitlist-counter" class="badge modern-badge-secondary">
-                        {{ event.waitlist_count }} people
-                    </span>
-                </div>
-            {% endif %}
-        {% endif %}
-    </div>
-</div> {% endcomment %}
 
     
 <!-- Edit Event Modal -->

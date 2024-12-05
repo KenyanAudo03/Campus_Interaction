@@ -1,9 +1,21 @@
-{% extends 'base.html' %} {% block title %}{{ forum.name }} - Forum Details
-{% endblock %} {% block content %} {% load static %}
+{% extends 'base.html' %} {% block title %}{{ forum.name }} - Forum Details 
+{% endblock %} {% block content %}{% load custom_filters %} {% load static %}
 
 <link rel="stylesheet" href="{% static 'css/forum/forum_detail.css' %}" />
-<link href="https://vjs.zencdn.net/8.0.4/video-js.min.css" rel="stylesheet" />
-<script src="https://vjs.zencdn.net/8.0.4/video.min.js"></script>
+<link rel="stylesheet" href="{% static 'css/forum/add_topic.css' %}" />
+
+<!-- Include Plyr CSS -->
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+<!-- Include Plyr JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+<!-- Posting -->
+<script src="{% static 'js/forum/forum_details.js' %}"></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <!-- Forum Header -->
 <div class="py-5" style="position: relative; color: #fff">
   {% if forum.display_picture %}
@@ -41,266 +53,89 @@
     "
   ></div>
   {% endif %}
+
   <div class="container forum-header">
     <div class="row">
       <div class="col-lg-6">
-        <h1 class="display-4">{{ forum.name }}</h1>
+        <h1 class="display-5" style="text-transform: uppercase">
+          {{ forum.name }}
+        </h1>
         <p class="lead">
           <span class="forum-description">
-            Stay up to date with the latest discussions and news in the {{ forum.name }} Forum.
+            Stay up to date with the latest discussions and news in the
+            <span
+              style="
+                text-transform: uppercase;
+                font-style: italic;
+                font-size: 14px;
+              "
+            >
+              {{ forum.name }}</span
+            >
+            Forum <i class="fa-brands fa-forumbee"></i>
           </span>
-          <span class="forum-text"> {{ forum.description }} </span>
+          <br />
+          <span class="forum-text"
+            >{{ forum.description }}
+          </span>
         </p>
-
-        <div class="search-container">
-          <form id="search-form" method="get" action="{% url 'forums:forum_list' %}">
-            <div class="input-group">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Search {{ forum.name }}"
-                name="q"
-                id="search-input"
-              />
-              <button class="btn" type="submit" id="search-submit">
-                <i class="fa-solid fa-magnifying-glass"></i>
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- JOIN GROUP... -->
-<div class="subscribe">
-  <div class="container">
-    <div class="sub-message">
-      <div class="discussion-comments">
-        <p id="member-count">{{ forum.member_count }} <span>Members</span></p>
-        <p id="posts-count">{{ forum.posts.count }} <span>Comments</span></p>
-        <p id="topics-count" class="topics-count">
-          {{ post_count }} <span>Topics</span>
-        </p>
-      </div>
-      <div class="subscribe-message" id="membership-controls">
-        <!-- Non-member controls -->
-        <div
-          id="non-member-controls"
-          class="{% if membership %}hidden{% endif %}"
-        >
-          <button id="subscribe-btn" class="subscribe-btn">Subscribe</button>
-        </div>
-        <!-- Member controls -->
-        <div
-          id="member-controls"
-          class="{% if not membership or membership.role != 'member' %}hidden{% endif %}"
-        >
-          <button id="messages-btn" class="messages-btn">Messages</button>
-          {% if forum.created_by != request.user %}
-          <button id="leave-btn" class="leave-btn">Leave</button>
-          {% endif %}
-        </div>
-        <!-- Admin controls -->
-        <div
-          id="admin-controls"
-          class="{% if not membership or membership.role != 'admin' %}hidden{% endif %}"
-        >
-          <button id="messages-btn-admin" class="messages-btn">Messages</button>
-          <button id="manage-btn" class="manage-btn">Manage</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+{% include "forums/join.html"%}
 
 <!-- POSTS AND MEMBERS LIST -->
 <div class="post-container">
-  <div class="main-content">
-    <div class="content-header">
-      <h2>{{ post_count }} Topics</h2>
-      <select class="sort-dropdown" id="sort-dropdown">
-        <option value="newest">Newest First</option>
-        <option value="trending">Trending</option>
-      </select>
+  <div class="members">
+    <div class="the__title">
+      <h2 class="forum-title" data-forum-id="{{ forum.id }}">
+        {{ forum.name|truncatechars:30 }}
+        <span>
+          <i class="fa fa-link" aria-hidden="true"></i>
+        </span>
+      </h2>
     </div>
-    <div id="post-form-container" class="container mt-4" data-forum-id="{{ forum.id }}">
-      <form method="POST" enctype="multipart/form-data" id="post-form" class="p-4">
-        {% csrf_token %}
-        <div class="form-group mb-3">
-            {{ post_form.content }}
-        </div>
-    
-        <div class="form-row mb-3">
-            <div class="form-group image-field">
-                <label for="id_image">Image (optional)</label>
-                {{ post_form.image }}
-                {% if post_form.image.errors %}
-                    <div class="text-danger">{{ post_form.image.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group video-field">
-                <label for="id_video">Video (optional, max 10MB)</label>
-                {{ post_form.video }}
-                {% if post_form.video.errors %}
-                    <div class="text-danger">{{ post_form.video.errors }}</div>
-                {% endif %}
-            </div>
-        </div>
-    
-        <button type="submit" class="btn btn-primary w-100">Post</button>
-    </form>    
-  </div>
-  
-  
-
-    {% for post in posts %}
-    <article class="post" id="post-{{ post.id }}">
-      <div class="author__options">
-        <div class="post-author">
-          <img
-            src="{{ post.user.profile.profile_pic.url }}"
-            alt="{{ post.user.username }} Profile"
-          />
-
-          <div class="author-details">
-            <div class="author-name">{{ post.user.username }}</div>
-            <div class="post-meta">
-              <span class="user-role">
-                {% if user.is_admin %}Forum Admin{% else %}Member{% endif %}
-              </span>
-              <span class="separator">•</span>
-              <span class="publish-info">Published in {{ forum.name }}</span>
-            </div>
-          </div>
-        </div>
-        <!-- Post Options Menu -->
-        <div class="post-options">
-          <button class="options-btn" onclick="toggleMenu('{{ post.id }}')">
-            <i class="fa-solid fa-ellipsis-vertical"></i>
-          </button>
-          <div class="options-menu" id="menu-{{ post.id }}">
-            {% if user == post.user %}
-            <button
-              class="menu-item delete-btn"
-              onclick="deletePost('{{ post.id }}')"
-            >
-              Delete
-            </button>
-            {% endif %}
-            <button class="menu-item" onclick="sharePost({{ post.id }})">
-              Share
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="post-content">
-        
-        <p>{{ post.content|urlize }}</p>
-        {% if post.image %}
-        <div class="media-container">
-          <img src="{{ post.image.url }}" alt="Post image" />
-        </div>
-        <!-- Image Preview modal -->
-        <div class="image-modal" id="imageModal">
-          <div class="modal-overlay"></div>
-          <div class="modal-container">
-            <div class="modal-header">
-              <div class="modal-title">Image Preview</div>
-              <div class="modal-actions">
-                <button class="action-btn download-btn">
-                  <i class="fa-solid fa-download"></i>
-                  Download
-                </button>
-                <button class="action-btn close-btn">
-                  <i class="fa-solid fa-xmark"></i>
-                </button>
-              </div>
-            </div>
-            <div class="modal-content">
-              <button class="nav-btn prev-btn">
-                <i class="fa-solid fa-arrow-left"></i>
-              </button>
-              <div class="image-container">
-                <img
-                  src="{{ post.image.url }}"
-                  alt="Modal Image"
-                  id="modalImage"
-                />
-              </div>
-              <button class="nav-btn next-btn">
-                <i class="fa-solid fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-        {% elif post.video %}
-        <div class="media-container" style="max-width: 100%; width: 100%; height: 100%;">
-          <video
-            id="my-video"
-            class="video-js vjs-default-skin"
-            controls
-            preload="auto"
-            width="640"
-            height="200"
-          >
-            <source src="{{ post.video.url }}" type="video/mp4" />
-          </video>
-        </div>
-        {% endif %}
-      </div>
-      <div class="post-stats">
-        <span class="stat-item likes" onclick="toggleLike('{{ post.id }}')">
-          <i
-            class="fa-solid fa-thumbs-up {% if post.liked %}liked{% endif %}"
-          ></i>
-          <span>{{ post.likes.count }}</span>
-        </span>
-        <span class="stat-item">
-          <i class="fa-regular fa-eye"></i>
-          <span>{{ post.views.count }}</span>
-        </span>
-        <span class="stat-item">
-          <i class="fa-solid fa-comment"></i>
-          <span>2</span>
-        </span>
-        <span class="post-time" style="margin-left: 10px"
-          >{{ post.created_at|timesince }} ago</span
-        >
-      </div>
-    </article>
-    {% endfor %}
-  </div>
-  <aside class="sidebar">
     <div class="sidebar-header">
       <h2>
-        Forum Members
+        FORUM MEMBERS
         <!-- <span>{{ online_members_count }} / {{ total_members_count }} active</span> -->
       </h2>
     </div>
     <div class="members-list">
       {% for member_info in members_with_roles %}
-      <div class="member {% if member_info.is_admin %}admin{% endif %}">
+      <div
+        class="member {% if member_info.is_admin %}admin{% endif %}"
+        data-user-id="{{ member_info.user.id }}"
+      >
         <img
           src="{{ member_info.user.profile.profile_pic.url }}"
           alt="{{ member_info.user.username }}"
         />
         <div class="member-info">
-          <div class="member-name">{{ member_info.user.username }}</div>
+          <div class="member-name">
+            <a href="{% url 'chat_room' username=member_info.user.username %}">
+              {{ member_info.user.username }}
+            </a>
+          </div>          
           <div class="member-likes">{{ member_info.post_likes }} likes</div>
         </div>
         <div class="member-role">
-          {% if member_info.is_admin %}
-          <span class="role-badge">Forum Admin</span>
+          {% if member_info.role == "Main Admin" %}
+          <span class="role-badge">Main Admin</span>
+          {% elif member_info.is_admin %}
+          <span class="role-badge" style="background-color: #28a745"
+            >Forum Admin</span
+          >
           {% else %}
           <span class="role-badge">Member</span>
           {% endif %}
         </div>
       </div>
-      {% endfor %} {% if user.is_authenticated and membership %} {% if left_members %}
+      {% endfor %} {% if user.is_authenticated and membership %} 
+      {% if left_members %}
       <div class="left-members">
         <h3>Users Who Left the Forum</h3>
         {% for left_member in left_members %}
@@ -312,15 +147,218 @@
           <div class="member-info">
             <div class="member-name">{{ left_member.user.username }}</div>
             <div class="member-likes">
-              Left on {{ left_member.left_at|date:"b d, Y \a\t g:i A"|capfirst }}
+              Left on {{ left_member.left_at|date:"b d, Y \a\t g:i A"|capfirst}}
             </div>
           </div>
         </div>
         {% endfor %}
       </div>
+
       {% endif %} {% endif %}
+      {% if comment_rules %}
+      <div class="comment-rules">
+        <h3>Comment Rules</h3>
+        <ul id="comment-rules-list" class="list-group">
+          {% for rule in comment_rules %}
+          <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
+            <div class="rule-content">
+              <strong>Rule:</strong> {{ rule.rule_text }}
+              <br />
+              <small style="color: #6c757d"
+                >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
+              >
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if post_rules %}
+      <div class="post-rules">
+        <h3>Post Rules</h3>
+        <ul id="post-rules-list" class="list-group">
+          {% for rule in post_rules %}
+          <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
+            <div class="rule-content">
+              <strong>Rule:</strong> {{ rule.rule_text }}
+              <br />
+              <small style="color: #6c757d"
+                >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
+              >
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
     </div>
+  </div>
+  <div class="main-content">
+    <!-- SORTING -->
+    <div class="content-header">
+      <h2 id="post-count-heading">{{ post_count }} Topics</h2>
+      <select class="sort-dropdown" id="sort-dropdown">
+        <option value="">Default Order</option>
+        <option value="newest">Newest First</option>
+        <option value="trending">Trending</option>
+      </select>
+    </div>
+    <!-- POSTS/TOPICS -->
+    <div data-posts-container class="posts-container">
+      {% if visible_posts_count > 0 %}
+      {% for post in posts %}
+        {% if post.approved or post.user == request.user %}
+          <article class="post" id="post-{{ post.id }}">
+            <a href="{% url 'forums:post_detail' forum_id=post.forum.id post_id=post.id %}" class="post-link"></a>
+            <div class="post-edge-link"></div>
+            <div class="author__options">
+              <div class="post-author">
+                <img src="{{ post.user.profile.profile_pic.url }}" alt="{{ post.user.username }} Profile" />
+                <div class="author-details">
+                  <div class="author-name">
+                    {{ post.user.username }}
+                    <span class="post-time" data-created-at="{{ post.created_at|date:'c' }}">
+                      {{ post.created_at|short_timesince }}
+                    </span>
+
+                    <span class="hidden-label" style="color: #c0111a; font-weight: 700; {% if post.approved %} display: none; {% endif %}">
+                      Hidden
+                    </span>
+                  </div>
+                  <div class="post-meta">
+                    <span class="user-role">{{ post.user_role }}</span>
+                    <span class="separator">•</span>
+                    <span class="publish-info">
+                      Published in {% if forum.name|length > 15 %}{{ forum.name|slice:":30" }}...{% else %}{{ forum.name }}{% endif %}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <!-- Post Options Menu -->
+              <div class="post-options">
+                <button class="options-btn" onclick="toggleMenu('{{ post.id }}')">
+                  <i class="fa-solid fa-ellipsis"></i>
+                </button>
+                <div class="options-menu" id="menu-{{ post.id }}">
+                  {% if membership %}
+                    {% if user == post.user %}
+                      <button class="menu-item"><i class="fa-solid fa-pen"></i> Edit</button>
+                      <button class="menu-item toggle-visibility-btn" data-post-id="{{ post.id }}" data-approved="{{ post.approved }}">
+                        {% if post.approved %}
+                          <i class="fa-solid fa-eye-slash"></i> Hide
+                        {% else %}
+                          <i class="fa-solid fa-eye"></i> Show
+                        {% endif %}
+                      </button>
+                      <button class="menu-item delete-btn" onclick="deletePost('{{ post.id }}')">
+                        <i class="fa-solid fa-trash" style="color: #c0111a"></i> Delete
+                      </button>
+                    {% else %}
+                      <button class="menu-item" onclick="openFlagModal('{{ post.id }}')">
+                        <i class="fa-solid fa-flag"></i> Flag
+                      </button>
+                    {% endif %}
+                    {% if post.imag or post.video %}
+                      <button class="menu-item" id="download_image_video">
+                        <i class="fa fa-download" aria-hidden="true"></i> Save
+                      </button>
+                    {% endif %}
+                  {% else %}
+                    <p class="menu-item" style="color: red">Must subscribe to see menu</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="post-content">
+              <h4>{{ post.title }}</h4>
+              <p>{{ post.content|urlize|linebreaks|truncatewords:60 }}</p>
+    
+              {% if post.image %}
+                <div class="media-container">
+                  <img src="{{ post.image.url }}" alt="Post image" />
+                </div>
+              {% elif post.video %}
+                <div class="media-container videos">
+                  <video controls crossorigin playsinline id="player-{{ post.id }}" class="player">
+                    <source src="{{ post.video.url }}" type="video/mp4" />
+                  </video>
+                </div>
+              {% endif %}
+            </div>
+            <div class="post-stats">
+              <span class="stat-item likes" onclick="toggleLike('{{ post.id }}')">
+                <i class="fa-solid fa-thumbs-up {% if post.liked %}liked{% endif %}"></i>
+                <span>{{ post.likes.count }}</span>
+              </span>
+              <a href="{% url 'forums:post_detail' forum_id=post.forum.id post_id=post.id %}" style="color: #57606a">
+                <span class="stat-item">
+                  <i class="fa-regular fa-eye"></i>
+                  <span>{{ post.views.count }}</span>
+                </span>
+              </a>
+              <style>  
+                .comment-count-unpublished {
+                  color: black;
+                  background-color: black;
+                  padding: 0 0.5em;
+                  border-radius: 5px;
+                }
+              </style>
+              
+              <a href="{% url 'forums:post_detail' forum_id=post.forum.id post_id=post.id %}" style="color: #57606a">
+                <span class="stat-item">
+                  <i class="fa-solid fa-comment"></i>
+                  <span class="{% if not post.approved %}comment-count-unpublished{% else %}comment-count-published{% endif %}">
+                      {{ post.comments.count }}
+                  </span>
+                </span>              
+              </a>
+              <span class="stat-item" onclick="sharePost('{{ post.id }}')">
+                <i class="fa-solid fa-share"></i>
+                <span>share</span>
+              </span>
+            </div>
+          </article>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="no-posts-message">
+        <p>No posts available. Be the first to create one!</p>
+        <a href="{% url 'forums:create_post' forum_id=forum.id %}" class="create-post-link">
+          <i class="fa-solid fa-plus-circle"></i> Create a Post
+        </a>
+      </div>
+    {% endif %}
+    
+  
+    </div>
+  </div>
+  <!-- OTHER FORUMS -->
+  <aside class="sidebar">
+    {% include "forums/forums.html"%}
   </aside>
+</div>
+<!-- IMAGE MODEL -->
+<div
+  id="image-modal"
+  class="hidden fixed inset-0 z-[1000] bg-black/80 flex items-center justify-center p-4"
+>
+  <div
+    class="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+  >
+    <img
+      id="modal-image"
+      src=""
+      alt="Enlarged image"
+      class="max-w-full max-h-full object-contain"
+    />
+    <button
+      id="close-modal"
+      class="absolute top-[-40px] right-0 text-white text-3xl hover:text-gray-300 focus:outline-none"
+    >
+      &times;
+    </button>
+  </div>
 </div>
 
 <!-- MDB Modal for Confirmation -->
@@ -348,229 +386,102 @@
     </div>
   </div>
 </div>
-
-<!-- Post Options JS copying and Deleting -->
-<script src="{% static 'js/forum/delete_share.js' %}"></script>
-<script src="{% static 'js/forum/forum_details.js' %}"></script>
-<script>
-  // Set all links to open in a new tab
-  document.querySelectorAll('.post-content a').forEach(function(link) {
-      link.setAttribute('target', '_blank');
-  });
-</script>
-
-<script>
-// SUBSCRIBE AND LEAVE JS
-const MembershipManager = {
-    elements: {
-        nonMemberControls: document.getElementById("non-member-controls"),
-        memberControls: document.getElementById("member-controls"),
-        adminControls: document.getElementById("admin-controls"),
-        subscribeBtn: document.getElementById("subscribe-btn"),
-        leaveBtn: document.getElementById("leave-btn"),
-        memberCount: document.getElementById("member-count"),
-        postsCount: document.getElementById("posts-count"),
-        topicsCount: document.getElementById("topics-count"),
-        membersList: document.querySelector(".members-list"),
-    },
-
-    init() {
-        this.setupEventListeners();
-    },
-
-    setupEventListeners() {
-        this.elements.subscribeBtn?.addEventListener("click", async () => {
-            try {
-                const response = await this.joinForum();
-                if (response.status === "subscribed") {
-                    this.updateUIForNewMember(response);
-                }
-            } catch (error) {
-                console.error("Error subscribing:", error);
-                alert("Failed to subscribe. Please try again.");
-            }
-        });
-
-        this.elements.leaveBtn?.addEventListener("click", async () => {
-            try {
-                const response = await this.leaveForum();
-                if (response.status === "left") {
-                    this.updateUIForFormerMember(response);
-                }
-            } catch (error) {
-                console.error("Error leaving:", error);
-                alert("Failed to leave forum. Please try again.");
-            }
-        });
-    },
-
-    async joinForum() {
-        const response = await fetch(`{% url 'forums:join_forum' forum.id %}`, {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
-                    .value,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error("Subscription failed");
-        }
-
-        return await response.json();
-    },
-
-    async leaveForum() {
-        const response = await fetch(`{% url 'forums:leave_forum' forum.id %}`, {
-            method: "DELETE",
-            headers: {
-                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
-                    .value,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error("Leave forum failed");
-        }
-
-        return await response.json();
-    },
-
-    createMemberCard(userData) {
-        return `
-            <div class="member ${userData.is_admin ? "admin" : ""}" id="member-card-${userData.user_id}">
-                <img
-                    src="{{ user.profile.profile_pic.url }}"
-                    alt="${userData.username}"
-                />
-                <div class="member-info">
-                    <div class="member-name">${userData.username}</div>
-                    <div class="member-likes">0 likes</div>
-                </div>
-                <div class="member-role">
-                    <span class="role-badge">${userData.is_admin ? "Forum Admin" : "Member"}</span>
-                </div>
-            </div>
-        `;
-    },
-
-    updateUIForNewMember(data) {
-        console.log("Updating UI for new member:", data);
-
-        // Hide non-member controls and show appropriate member controls
-        this.elements.nonMemberControls.classList.add("hidden");
-
-        if (data.role === "admin") {
-            this.elements.adminControls.classList.remove("hidden");
-            this.elements.memberControls.classList.add("hidden");
-        } else {
-            this.elements.memberControls.classList.remove("hidden");
-            this.elements.adminControls.classList.add("hidden");
-        }
-
-        // Update forum statistics
-        this.updateCounts(data);
-
-        // Add new member to members list
-        if (this.elements.membersList) {
-            // Remove any existing member card for the current user
-            const existingMemberCard = this.elements.membersList
-                .querySelector(`#member-card-${data.user_id}`);
-            
-            if (existingMemberCard) {
-                existingMemberCard.remove();
-            }
-
-            const newMemberCard = this.createMemberCard({
-                user_id: data.user_id,
-                username: "{{ user.username }}",
-                is_admin: data.role === "admin",
-            });
-
-            // Find the "left-members" section if it exists
-            const leftMembersSection =
-                this.elements.membersList.querySelector(".left-members");
-
-            if (leftMembersSection) {
-                // If left members section exists, insert before it
-                leftMembersSection.insertAdjacentHTML("beforebegin", newMemberCard);
-            } else {
-                // If no left members section, append to the end
-                this.elements.membersList.insertAdjacentHTML(
-                    "beforeend",
-                    newMemberCard
-                );
-            }
-        }
-    },
-
-    updateUIForFormerMember(data) {
-        console.log("Updating UI for former member:", data);
-
-        // Show non-member controls and hide member/admin controls
-        this.elements.nonMemberControls.classList.remove("hidden");
-        this.elements.memberControls.classList.add("hidden");
-        this.elements.adminControls.classList.add("hidden");
-
-        // Update forum statistics
-        this.updateCounts(data);
-
-        // Remove user from active members list
-        if (this.elements.membersList) {
-            const currentMemberCard = this.elements.membersList.querySelector(
-                `#member-card-${data.user_id}`
-            );
-
-            if (currentMemberCard) {
-                console.log("Removing member card for user:", data.user_id);
-                currentMemberCard.remove();
-            } else {
-                console.warn("No member card found for user:", data.user_id, "Data:", data);
-            }
-        }
-    },
-
-    updateCounts(data) {
-        if (this.elements.memberCount) {
-            this.elements.memberCount.innerHTML = `${data.member_count} <span>Members</span>`;
-        }
-        if (this.elements.postsCount) {
-            this.elements.postsCount.innerHTML = `${data.posts_count} <span>Comments</span>`;
-        }
-        if (this.elements.topicsCount) {
-            this.elements.topicsCount.innerHTML = `${data.topics_count} <span>Topics</span>`;
-        }
-    },
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-    MembershipManager.init();
-});
-</script>
-
+<!-- Flag Post -->
+ {% include "forums/flag_topics.html" %}
+<!-- Partial JS-->
+{% include "forums/all_scripts.html" %}
 <!-- Video Player -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  var videos = document.querySelectorAll("video");
-
-  videos.forEach(function (videoElement) {
-    var player = videojs(videoElement, {
-      responsive: true,
-      fluid: true,
-      playbackRates: [0.5, 1, 1.5, 2],
-      controlBar: {
-        children: [
-          "playToggle",
-          "volumePanel",
-          "progressControl",
-          "fullscreenToggle",
-          "currentTimeDisplay",
-          "timeDivider",
-          "durationDisplay",
+  document.addEventListener("DOMContentLoaded", () => {
+    const videos = document.querySelectorAll(".post .player");
+    const posts = document.querySelectorAll(".post");
+    let activePlayer = null;
+    const plyrInstances = Array.from(videos).map((video) => {
+      const plyrInstance = new Plyr(video, {
+        controls: [
+          "play-large",
+          "play",
+          "progress",
+          "current-time",
+          "mute",
+          "volume",
+          "fullscreen",
         ],
-      },
+        settings: ["quality", "speed"],
+        ratio: "16:9",
+        responsive: true,
+        autoplay: false,
+        muted: true,
+        preload: "metadata",
+        loadSprite: true,
+        iconPrefix: "plyr",
+        blankVideo: "",
+      });
+
+      // Add custom hover functionality
+      const postElement = video.closest(".post");
+      if (postElement) {
+        postElement.addEventListener("mouseenter", () => {
+          // Pause all other videos
+          plyrInstances.forEach((instance) => {
+            if (instance !== plyrInstance) {
+              instance.pause();
+            }
+          });
+
+          plyrInstance.play().catch((error) => {
+            console.error("Error playing video on hover:", error);
+          });
+        });
+
+        postElement.addEventListener("mouseleave", () => {
+          plyrInstance.pause();
+        });
+      }
+
+      return plyrInstance;
     });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const videoElement = entry.target;
+          const plyrInstance = plyrInstances.find(
+            (p) => p.elements.container === videoElement.closest(".plyr")
+          );
+
+          if (entry.isIntersecting) {
+            // Pause any currently active player
+            plyrInstances.forEach((instance) => {
+              if (instance !== plyrInstance) {
+                instance.pause();
+              }
+            });
+            plyrInstance.play().catch((error) => {
+              console.error("Error attempting to play video:", error);
+            });
+          } else {
+            plyrInstance.pause();
+          }
+        });
+      },
+      {
+        threshold: 0.5,
+        rootMargin: "0px 0px 100px 0px",
+      }
+    );
+    videos.forEach((video) => {
+      video.preload = "metadata";
+      video.addEventListener("loadedmetadata", () => {
+        video.classList.add("video-loaded");
+      });
+
+      observer.observe(video);
+    });
+    if ("loading" in HTMLVideoElement.prototype) {
+      videos.forEach((video) => {
+        video.loading = "lazy";
+      });
+    }
   });
-});
 </script>
 {% endblock %}

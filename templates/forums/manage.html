@@ -1,0 +1,527 @@
+{% extends 'base.html' %} {% block title %}{{ forum.name }} - Forum Details 
+{% endblock %} {% block content %}{% load custom_filters %}
+{% load custom_filters %} {% load static %}
+
+<link rel="stylesheet" href="{% static 'css/forum/forum_detail.css' %}" />
+<link rel="stylesheet" href="{% static 'css/forum/add_topic.css' %}" />
+
+<!-- Include Plyr CSS -->
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+<!-- Include Plyr JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+<!-- Posting -->
+<script src="{% static 'js/forum/forum_details.js' %}"></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100..900&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- Forum Header -->
+<div class="py-5" style="position: relative; color: #fff">
+  {% if forum.display_picture %}
+  <div
+    style="
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    "
+  >
+    <img
+      src="{{ forum.display_picture.url }}"
+      alt="{{ forum.name }}"
+      style="
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.7);
+      "
+    />
+  </div>
+  {% else %}
+  <div
+    style="
+      background-color: #4b00ff;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    "
+  ></div>
+  {% endif %}
+
+  <div class="container forum-header">
+    <div class="row">
+      <div class="col-lg-6">
+        <h1 class="display-5" style="text-transform: uppercase">
+          {{ forum.name }}
+        </h1>
+        <p class="lead">
+          <span class="forum-description">
+            Stay up to date with the latest discussions and news in the
+            <span
+              style="
+                text-transform: uppercase;
+                font-style: italic;
+                font-size: 14px;
+              "
+            >
+              {{ forum.name }}</span
+            >
+            Forum <i class="fa-brands fa-forumbee"></i>
+          </span>
+          <br />
+          <span class="forum-text">{{ forum.description }} </span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN GROUP... -->
+<div class="subscribe">
+  <div class="">
+    <div class="sub-message">
+      <div class="discussion-comments">
+        <p class="back-btn">
+          <a
+            href="{% url 'forums:forum_detail' forum.id %}"
+            class="forum-card-overlay"
+            ><i class="fa-solid fa-arrow-left"></i
+          ></a>
+        </p>
+        <p id="member-count">{{ forum.member_count }} <span>Members</span></p>
+        <p id="posts-count">{{ comment_count }} <span>Comments</span></p>
+        <p id="topics-count" class="topics-count">
+          {{ post_count }} <span>Topics</span>
+        </p>
+      </div>
+      <div class="search-container">
+        <div class="input-group">
+          <input
+            type="text"
+            autocomplete="off"
+            class="form-control"
+            id="forum-search-input"
+            placeholder="Search {{ forum.name }}"
+            data-forum-id="{{ forum.id }}"
+          />
+        </div>
+        <!-- This div will hold the search suggestions -->
+        <div id="search-suggestions" class="search-suggestions"></div>
+      </div>
+      <div class="subscribe-message" id="membership-controls">
+        <!-- Non-member controls -->
+        <div
+          id="non-member-controls"
+          class="{% if membership %}hidden{% endif %}"
+        >
+          <button id="subscribe-btn" class="subscribe-btn">Subscribe</button>
+        </div>
+        <!-- Member controls -->
+        <div
+          id="member-controls"
+          class="{% if not membership or membership.role != 'member' %}hidden{% endif %}"
+        >
+        <button id="messages-btn" class="messages-btn"><i class="fa-solid fa-message"></i></button>
+        <button id="messages-btn" class="create" ><a href="{% url 'forums:create_post' forum_id=forum.id %}"><i class="fa-solid fa-plus"></i> Topic</a></button>
+          {% if forum.created_by != request.user %}
+          <button id="leave-btn" class="leave-btn">Leave</button>
+          {% endif %}
+        </div>
+        <!-- Admin controls -->
+        <div
+          id="admin-controls"
+          class="{% if not membership or membership.role != 'admin' %}hidden{% endif %}"
+        >
+          <button id="messages-btn-admin" class="messages-btn"><i class="fa-solid fa-message"></i></button>
+          <button id="messages-btn" class="create"><a href="{% url 'forums:create_post' forum_id=forum.id %}"><i class="fa-solid fa-plus"></i> Topic</a></button>
+          <button id="manage-btn" class="manage-btn"  class="manage-btn"><a href="{% url 'forums:manage_forum' forum_id=forum.id %}">Manage</a>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="post-container">
+  <aside class="sidebar">
+    <!-- Post Rules Section -->
+    <div class="post-rules">
+      <h4>Post Rules</h4>
+      <ul id="post-rules-list" class="list-group">
+        {% for rule in post_rules %}
+        <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
+          <div class="rule-content">
+            <strong>Rule:</strong> {{ rule.rule_text }}
+            <br />
+            <small style="color: #6c757d"
+              >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
+            >
+            <span
+              class="delete-rule-btn"
+              data-rule-type="post"
+              data-rule-id="{{ rule.id }}"
+            >
+              <i class="fas fa-trash-alt text-danger"></i>
+            </span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      <div
+        id="no-post-rules-alert"
+        class="alert alert-info {% if post_rules %}d-none{% endif %}"
+      >
+        No post rules have been added yet. Add post rules to guide users.
+      </div>
+    </div>
+
+    <!-- Comment Rules Section -->
+    <div class="comment-rules">
+      <h4>Comment Rules</h4>
+      <ul id="comment-rules-list" class="list-group">
+        {% for rule in comment_rules %}
+        <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
+          <div class="rule-content">
+            <strong>Rule:</strong> {{ rule.rule_text }}
+            <br />
+            <small style="color: #6c757d"
+              >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
+            >
+            <span
+              class="delete-rule-btn"
+              data-rule-type="comment"
+              data-rule-id="{{ rule.id }}"
+            >
+              <i class="fas fa-trash-alt text-danger"></i>
+            </span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      <div
+        id="no-comment-rules-alert"
+        class="alert alert-info {% if comment_rules %}d-none{% endif %}"
+      >
+        No comment rules added yet. Add post comment to guide users
+      </div>
+    </div>
+  </aside>
+  <!-- MDB Modal for Confirmation -->
+  <div
+    class="modal fade"
+    id="deletePostModal"
+    tabindex="-1"
+    aria-labelledby="deleteRuleModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteRuleModalLabel"></h5>
+        </div>
+        <div class="modal-body">Are you sure you want to delete this rule?</div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content" style="border-right: 1px solid #ccc">
+    <div class="sections">
+      <div class="create__options" style="margin-top: -20px">
+        <a href="#" id="edit-forum" class="option-link"> Edit Forum </a>
+        <a href="#" id="make-rules" class="option-link"> Make Rules </a>
+        <a href="#" id="view-flagged-posts" class="option-link">
+          Flagged Posts
+        </a>
+        <a href="#" id="view-delete-forum" class="option-link">
+          Delete Forum
+        </a>
+      </div>
+    </div>
+    <div id="edit-forum-content" class="content-section">
+      <div class="post__form">
+        <h4>Edit Forum</h4>
+        <form
+          action="{% url 'forums:manage_forum' forum.id %}"
+          method="post"
+          enctype="multipart/form-data"
+          class="p-2 forum__creation"
+        >
+          {% csrf_token %}
+          <div class="form-group mb-3" id="title-field">
+            {{ form.name }}
+            <div id="char-count" class="char-count">0/100</div>
+          </div>
+          <div id="text-post-fields">
+            <div class="form-group mb-3">
+              {{ form.description }}
+              <small id="charCounter" class="text-muted"
+                >250 characters remaining</small
+              >
+            </div>
+          </div>
+          <div id="image-video-post-fields">
+            <div class="drag-and-drop-area" id="drag-and-drop-area">
+              <p>
+                Forum Display Picture (Optional)<i
+                  class="fa-solid fa-upload"
+                ></i>
+              </p>
+              <input
+                type="file"
+                id="hidden-file-input"
+                accept="image/*,video/*"
+                style="display: none"
+              />
+            </div>
+            <div class="preview-container" id="preview-container"></div>
+            <div class="form-group image-field" style="display: none">
+              {{ form.display_picture }}
+            </div>
+          </div>
+          <div id="submit-button-div">
+            <button type="submit" class="btn-modern">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="make-rules-content" class="content-section" style="display: none">
+      <h4>Make Rules</h4>
+      <div class="post__form">
+        <form
+          id="post-rule-form"
+          method="POST"
+          action="{% url 'forums:add_post_rule' forum_id=forum.id %}"
+          style="padding-bottom: 50px"
+        >
+          {% csrf_token %}
+          <div>
+            <h3>Add Post Rule</h3>
+            {{ post_rule_form.as_p }}
+            <small id="post-rule-char-count">0/100 characters</small>
+            <div id="post-form-errors" class="alert alert-danger d-none"></div>
+            <div id="submit-button-div">
+              <button type="submit">Save Post Rule</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="post__form">
+        <form
+          id="comment-rule-form"
+          method="POST"
+          action="{% url 'forums:add_comment_rule' forum_id=forum.id %}"
+        >
+          {% csrf_token %}
+          <div>
+            <h3>Add Comment Rule</h3>
+            {{ comment_rule_form.as_p }}
+            <div id="comment-rule-char-count">0/100 characters</div>
+            <div id="comment-form-errors" class="alert alert-danger d-none"></div>
+            <div id="submit-button-div">
+              <button type="submit">Save Comment Rule</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="flagged-posts-content"
+      class="content-section"
+      style="display: none"
+    >
+      <h4>
+        Flagged Posts
+        <i class="fa fa-flag" aria-hidden="true" style="color: red"></i>
+      </h4>
+      <div class="flagged-posts-container">
+        {% if flagged_posts %} {% for flag in flagged_posts %}
+        <a
+          href="{% url 'forums:post_detail' flag.post.forum.id flag.post.id %}"
+          class="flagged-post-card-link"
+          target="_blank"
+        >
+          <div class="flagged-post-card">
+            <div class="flagged-post-header">
+              <img
+                src="{{ flag.user.profile.profile_pic.url }}"
+                alt="{{ flag.user.username }}"
+                class="profile-pic"
+              />
+              <div>
+                <p class="flagged-by">
+                  Flagged by: <strong>{{ flag.user.username }}</strong>
+                </p>
+                <p class="flagged-date">
+                  Flagged on: {{ flag.created_at|short_timesince }}
+                </p>
+              </div>
+            </div>
+            <div class="flagged-post-content">
+              <p><strong>Category:</strong> {{ flag.get_category_display }}</p>
+              <p><strong>Description:</strong> {{ flag.description }}</p>
+              <p>
+                <strong>Post:</strong> {{ flag.post.title|default:"[No Title]" }}
+              </p>
+            </div>
+            <div class="click-to-view-message">Click to view</div>
+          </div>
+        </a>
+        {% endfor %} {% else %}
+        <p class="no-flagged-posts">There are no flagged posts.</p>
+        {% endif %}
+      </div>
+    </div>
+    <!-- Delete Forum Section -->
+    <div
+      id="delete-forum-content"
+      class="content-section"
+      style="display: none"
+    >
+      <h3>Warning: Deleting the Forum</h3>
+      <p>
+        Are you sure you want to delete this forum? This action cannot be
+        undone. All forum data, including posts, comments, and members, will be
+        permanently deleted.
+      </p>
+      <form
+        method="POST"
+        action="{% url 'forums:delete_forum' forum_id=forum.id %}"
+      >
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete Forum</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="members">
+    <div class="the__title">
+      <h2 class="forum-title" data-forum-id="{{ forum.id }}">
+        {{ forum.name|truncatechars:30 }}
+        <span>
+          <i class="fa fa-link" aria-hidden="true"></i>
+        </span>
+      </h2>
+    </div>
+    <div class="sidebar-header">
+      <h2>FORUM MEMBERS</h2>
+    </div>
+    
+    <div class="members-list">
+      {% for member_info in members_with_roles %}
+      <div class="general__managing__users">
+      <div
+        class="manage__users {% if member_info.is_admin %}admin{% endif %}"
+        data-user-id="{{ member_info.user.id }}"
+      >
+        <img
+          src="{{ member_info.user.profile.profile_pic.url }}"
+          alt="{{ member_info.user.username }}"
+        />
+        <div class="member-info">
+          <div class="member-name">
+            <a href="{% url 'chat_room' username=member_info.user.username %}">
+              {{ member_info.user.username }}
+            </a>
+          </div>
+          
+          <div class="member-likes">{{ member_info.post_likes }} likes 
+          <span style="padding-left: 10px;">{{ member_info.total_flags }} Flags</span></div>
+        </div>
+        <div
+          class="member-role"
+          style="margin-left: auto; display: flex; align-items: center"
+        >
+          {% if member_info.role == "Main Admin" %}
+          <span class="role-badge">Main Admin</span>
+          {% elif member_info.is_admin %}
+          <span class="role-badge" style="background-color: #28a745"
+            >Forum Admin</span
+          >
+          {% else %}
+          <span class="role-badge">Member</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="member-actions">
+        {% if member_info.is_admin and member_info.role != "Main Admin" %}
+         {% if user.membership.role == "admin" or user == forum.created_by %}
+        <button
+          class="action-btn"
+          data-action="revoke_admin"
+          data-user-id="{{ member_info.user.id }}"
+        >
+          Revoke Admin
+        </button>
+        {% endif %} {% if user != member_info.user %}
+        <button
+          class="action-btn"
+          data-action="remove"
+          data-user-id="{{ member_info.user.id }}"
+        >
+          Remove
+        </button>
+        {% endif %} {% elif not member_info.is_admin %} 
+        {% if user == forum.created_by %}
+        <button
+          class="action-btn"
+          data-action="make_admin"
+          data-user-id="{{ member_info.user.id }}"
+        >
+          Make Admin
+        </button>
+        {% endif %} {% if user != member_info.user %}
+        <button
+          class="action-btn"
+          data-action="remove"
+          data-user-id="{{ member_info.user.id }}"
+        >
+          Remove
+        </button>
+        {% endif %} {% endif %}
+      </div>
+    </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% include "forums/manage_scripts.html"%}
+
+{% endblock %}

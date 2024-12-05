@@ -1,0 +1,33 @@
+ <!-- Flag Modal Template -->
+ <div id="flagPostModal" class="flag-modal-overlay">
+    <div class="flag-modal-container">
+        <div class="flag-modal-header">
+            <h2>Flag Post</h2>
+            <button class="flag-modal-close" onclick="closeFlagModal()">&times;</button>
+        </div>
+        
+        <form id="flagPostForm" class="flag-modal-form">
+            <select name="category" class="flag-category-select" required>
+                <option value="">Select a Category</option>
+                <option value="inappropriate">Inappropriate Content</option>
+                <option value="spam">Spam</option>
+                <option value="harassment">Harassment</option>
+                <option value="misinformation">Misinformation</option>
+                <option value="copyright">Copyright Violation</option>
+                <option value="other">Other</option>
+            </select>
+  
+            <textarea 
+                name="description" 
+                class="flag-description-textarea" 
+                placeholder="Provide details about your flag (optional)"
+                rows="4"
+                maxlength="500"
+            ></textarea>
+  
+            <div id="flagErrorMessage" class="flag-error-message"></div>
+  
+            <button type="submit" class="flag-submit-btn">Submit Flag</button>
+        </form>
+    </div>
+  </div>

@@ -1,0 +1,47 @@
+{% for reply in replies %}
+    {% load custom_filters %}
+
+    <div class="comment reply" data-comment-id="{{ reply.id }}">
+        <div class="comment-author">
+            <img src="{{ reply.user.profile.profile_pic.url }}" alt="{{ reply.user.username }} Profile" />
+            <span class="comment-username">{{ reply.user.username }}</span>
+            <span class="comment__posted_time">{{ reply.created_at|short_timesince }}</span>
+        </div>
+        <div class="comment-content">{{ reply.content|urlize|linebreaks }}</div>
+        <div class="comment-actions">
+        <button 
+            class="like-button {% if reply.id in liked_reply_ids %}liked{% endif %}" 
+            data-comment-id="{{ reply.id }}">
+            <i class="fa fa-thumbs-up" aria-hidden="true"></i> 
+            {{ reply.likecomment_set.count }}
+        </button>        
+            <button class="reply-button" data-comment-id="{{ reply.id }}">
+                <i class="fa fa-comment" aria-hidden="true"></i> {{ reply.replies.count }}
+            </button>
+            {% if reply.user.id == request.user.id %}
+                <button data-comment-id="{{ reply.id }}" class="delete-comment-btn">
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+            {% endif %}
+            <button data-comment-id="{{ reply.id }}" class="share-comment-button">
+                <i class="fa fa-share" aria-hidden="true"></i> Share
+            </button>
+        </div>
+
+        <div id="reply-form-{{ reply.id }}" class="reply-form" style="display: none;">
+            <form data-comment-id="{{ reply.id }}">
+                <div class="reply__wrap">
+                    <textarea name="content" placeholder="Write your reply here..."></textarea>
+                    <div class="buttons-container">
+                        <button type="button" class="cancel-reply-button">Cancel</button>
+                        <button type="submit" class="submit-reply-button">Post Reply</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="replies-container">
+            {% include "forums/replies.html" with replies=reply.replies.all %}
+        </div>
+    </div>
+{% endfor %}

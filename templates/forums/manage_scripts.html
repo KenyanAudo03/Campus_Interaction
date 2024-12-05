@@ -1,0 +1,479 @@
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+  const actionButtons = document.querySelectorAll(".action-btn");
+
+  actionButtons.forEach((button) => {
+    button.addEventListener("click", function () {
+      const userId = button.getAttribute("data-user-id");
+      const action = button.getAttribute("data-action");
+      const forumId = document
+        .querySelector(".forum-title")
+        .getAttribute("data-forum-id");
+      const csrfToken = document.querySelector(
+        "[name=csrfmiddlewaretoken]"
+      ).value;
+
+      fetch(`/forums/manage-member/${forumId}/${userId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: action }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data.success) {
+            const memberElement = button.closest(".general__managing__users");
+            const roleBadge = memberElement.querySelector(".role-badge");
+
+            if (action === "remove") {
+              memberElement.closest(".members-list").removeChild(memberElement);
+            } else if (action === "make_admin") {
+              button.textContent = "Revoke Admin";
+              button.setAttribute("data-action", "revoke_admin");
+              roleBadge.textContent = "Forum Admin";
+              roleBadge.style.backgroundColor = "#28a745";
+            } else if (action === "revoke_admin") {
+              button.textContent = "Make Admin";
+              button.setAttribute("data-action", "make_admin");
+              roleBadge.textContent = "Member";
+              roleBadge.style.backgroundColor = "#0366d6";
+            }
+          } else {
+            alert("Error: " + data.error);
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    });
+  });
+});
+
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const links = document.querySelectorAll(".option-link");
+    const contentSections = document.querySelectorAll(".content-section");
+
+    contentSections.forEach((section) => {
+      section.style.display = "none";
+    });
+
+    links.forEach((link) => {
+      link.addEventListener("click", function (event) {
+        event.preventDefault();
+        const targetId = `${link.id.replace("view-", "")}-content`;
+
+        links.forEach((link) => {
+          link.classList.remove("active");
+        });
+        link.classList.add("active");
+
+        contentSections.forEach((section) => {
+          section.style.display = "none";
+        });
+
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) {
+          targetSection.style.display = "block";
+        }
+      });
+    });
+
+    const defaultSection = document.getElementById("edit-forum-content");
+    const defaultLink = document.getElementById("edit-forum");
+
+    if (defaultSection) {
+      defaultSection.style.display = "block";
+    }
+
+    if (defaultLink) {
+      defaultLink.classList.add("active");
+    }
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const dragDropArea = document.getElementById("drag-and-drop-area");
+    const hiddenFileInput = document.getElementById("hidden-file-input");
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+    let currentFile = null;
+
+    dragDropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dragDropArea.classList.add("drag-over");
+    });
+
+    dragDropArea.addEventListener("dragleave", () => {
+      dragDropArea.classList.remove("drag-over");
+    });
+
+    dragDropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dragDropArea.classList.remove("drag-over");
+      const files = e.dataTransfer.files;
+      handleFileSelection(files[0]);
+    });
+
+    dragDropArea.querySelector(".fa-upload").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!currentFile) {
+        hiddenFileInput.click();
+      }
+    });
+
+    hiddenFileInput.addEventListener("change", () => {
+      const files = hiddenFileInput.files;
+      handleFileSelection(files[0]);
+    });
+
+    function handleFileSelection(file) {
+      if (!file) return;
+
+      if (file.type.split("/")[0] !== "image") {
+        showErrorMessage("Please upload an image file.");
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        showErrorMessage("File size should not exceed 10MB.");
+        return;
+      }
+
+      currentFile = file;
+      dragDropArea.innerHTML = ""; // Clear previous content
+      dragDropArea.classList.add("preview-mode");
+
+      const previewItem = document.createElement("div");
+      previewItem.classList.add("preview-item", "w-full", "h-full");
+
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      img.classList.add("w-full", "h-full", "object-cover", "rounded-lg");
+      previewItem.appendChild(img);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.classList.add("remove-btn");
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.onclick = () => {
+        currentFile = null;
+
+        dragDropArea.classList.remove("preview-mode");
+        dragDropArea.innerHTML = `
+            <p>Forum Display Picture(Optional) <i class="fa-solid fa-upload"></i></p>
+            <input type="file" id="hidden-file-input" accept="image/*" style="display: none;" />
+          `;
+
+        const uploadIcon = dragDropArea.querySelector(".fa-upload");
+        uploadIcon.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (!currentFile) {
+            hiddenFileInput.click();
+          }
+        });
+
+        // Clear the form's hidden input
+        document.querySelector("input[name='display_picture']").value = "";
+      };
+
+      previewItem.appendChild(removeBtn);
+      dragDropArea.appendChild(previewItem);
+
+      // Update the form's hidden input with the selected file
+      const imageInput = document.querySelector(
+        "input[name='display_picture']"
+      );
+      imageInput.files = createFileList(file);
+    }
+
+    function createFileList(file) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      return dataTransfer.files;
+    }
+
+    function showErrorMessage(message) {
+      const errorMessage = document.createElement("div");
+      errorMessage.classList.add("error-message");
+      errorMessage.textContent = message;
+
+      document.body.appendChild(errorMessage);
+
+      setTimeout(() => {
+        errorMessage.remove();
+      }, 4000);
+    }
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const titleInput = document.getElementById("topic__title");
+    const charCountDiv = document.getElementById("char-count");
+
+    const descriptionField = document.getElementById("description__input");
+    const charCounter = document.getElementById("charCounter");
+    const maxCharsDescription = 250;
+    const maxCharsTitle = 100;
+
+    // Initialize from current form values
+    const savedTitle = titleInput.value || ""; // Default to empty string if no value
+    const savedDescription = descriptionField.value || "";
+
+    // Function to update title character count
+    function updateTitleCharCount() {
+      const currentLength = titleInput.value.length;
+      charCountDiv.textContent = `${currentLength}/100`;
+    }
+
+    // Function to update description character count
+    function updateDescriptionCharCount() {
+      const charCount = descriptionField.value.length;
+      const charsRemaining = maxCharsDescription - charCount;
+
+      if (charsRemaining >= 0) {
+        charCounter.textContent = `${charsRemaining} characters remaining`;
+        charCounter.classList.remove("text-danger");
+      } else {
+        charCounter.textContent = `Exceeded by ${-charsRemaining} characters`;
+        charCounter.classList.add("text-danger");
+      }
+    }
+
+    // Initialize character count based on existing values
+    function initializeCounts() {
+      // Set initial counts
+      charCountDiv.textContent = `${savedTitle.length}/100`; // Set title count
+      charCounter.textContent = `${
+        maxCharsDescription - savedDescription.length
+      } characters remaining`; // Set description count
+
+      // If description exceeds, mark it red
+      if (savedDescription.length > maxCharsDescription) {
+        charCounter.textContent = `Exceeded by ${
+          savedDescription.length - maxCharsDescription
+        } characters`;
+        charCounter.classList.add("text-danger");
+      } else {
+        charCounter.classList.remove("text-danger");
+      }
+    }
+
+    // Run the initialization for both title and description
+    initializeCounts();
+
+    // Attach input event listeners to update counts in real-time
+    titleInput.addEventListener("input", updateTitleCharCount);
+    descriptionField.addEventListener("input", updateDescriptionCharCount);
+
+    // Automatically resize the textarea when typing
+    const textarea = document.getElementById("description__input");
+
+    function initializeTextarea() {
+      const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+      const padding =
+        parseFloat(getComputedStyle(textarea).paddingTop) +
+        parseFloat(getComputedStyle(textarea).paddingBottom);
+      textarea.style.height = `${lineHeight * 6 + padding}px`;
+    }
+
+    function resizeTextarea() {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+
+    initializeTextarea();
+    textarea.addEventListener("input", resizeTextarea);
+  });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const postRuleInput = document.querySelector("#post-rule-form textarea");
+      const postCharCount = document.getElementById("post-rule-char-count");
+      const commentRuleInput = document.querySelector(
+        "#comment-rule-form textarea"
+      );
+      const commentCharCount = document.getElementById("comment-rule-char-count");
+  
+      if (postRuleInput) {
+        postRuleInput.addEventListener("input", function () {
+          const currentLength = postRuleInput.value.length;
+          postCharCount.textContent = `${currentLength}/100 characters`;
+          if (currentLength > 100) {
+            postCharCount.style.color = "red";
+          } else {
+            postCharCount.style.color = "black";
+          }
+        });
+      }
+  
+      if (commentRuleInput) {
+        commentRuleInput.addEventListener("input", function () {
+          const currentLength = commentRuleInput.value.length;
+          commentCharCount.textContent = `${currentLength}/100 characters`;
+          if (currentLength > 100) {
+            commentCharCount.style.color = "red";
+          } else {
+            commentCharCount.style.color = "black";
+          }
+        });
+      }
+  
+      function setupRuleSubmission(
+        formId,
+        rulesListId,
+        noRulesAlertId,
+        formErrorsId
+      ) {
+        const form = document.getElementById(formId);
+        const rulesList = document.getElementById(rulesListId);
+        const noRulesAlert = document.getElementById(noRulesAlertId);
+        const formErrorsContainer = document.getElementById(formErrorsId);
+  
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+  
+          formErrorsContainer.innerHTML = "";
+          formErrorsContainer.classList.add("d-none");
+  
+          const formData = new FormData(form);
+  
+          fetch(form.action, {
+            method: "POST",
+            body: formData,
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "success") {
+                const newRuleItem = document.createElement("li");
+                newRuleItem.className = "list-group-item rule-item";
+                newRuleItem.setAttribute("data-rule-id", data.rule_id);
+                newRuleItem.innerHTML = `
+                  <strong>Rule:</strong> ${data.rule_text}
+                  <br>
+                  <small style="color: #6c757d;">Created at: ${data.created_at}</small>
+                  <span class="delete-rule-btn" data-rule-id="${data.rule_id}" data-rule-type="${formId.includes('post') ? 'post' : 'comment'}">
+                    <i class="fas fa-trash-alt text-danger" style="cursor: pointer;"></i>
+                  </span>
+                `;
+  
+                rulesList.appendChild(newRuleItem);
+  
+                noRulesAlert.classList.add("d-none");
+  
+                form.reset();
+  
+                // Reset the character count to 0
+                if (formId === "post-rule-form") {
+                  postCharCount.textContent = "0/100 characters";
+                  postCharCount.style.color = "black";
+                } else if (formId === "comment-rule-form") {
+                  commentCharCount.textContent = "0/100 characters";
+                  commentCharCount.style.color = "black";
+                }
+  
+                setupRuleDeletion();
+              } else if (data.status === "error") {
+                let errorHtml = "";
+                for (let [field, errors] of Object.entries(data.errors)) {
+                  errorHtml += errors.map((error) => `${field}: ${error}`).join("<br>");
+                }
+                formErrorsContainer.innerHTML = errorHtml;
+                formErrorsContainer.classList.remove("d-none");
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              formErrorsContainer.innerHTML = "An unexpected error occurred.";
+              formErrorsContainer.classList.remove("d-none");
+            });
+        });
+      }
+  
+      function setupRuleDeletion() {
+        document.querySelectorAll(".delete-rule-btn").forEach((button) => {
+          button.onclick = function () {
+            const ruleId = this.getAttribute("data-rule-id");
+            const ruleType = this.getAttribute("data-rule-type");
+            const deleteUrl =
+              ruleType === "post"
+                ? `{% url 'forums:delete_post_rule' rule_id=0 %}`.replace("0", ruleId)
+                : `{% url 'forums:delete_comment_rule' rule_id=0 %}`.replace("0", ruleId);
+  
+            const modal = new bootstrap.Modal(document.getElementById("deletePostModal"));
+            modal.show();
+  
+            document.getElementById("confirmDeleteBtn").onclick = function () {
+              fetch(deleteUrl, {
+                method: "POST",
+                headers: {
+                  "X-Requested-With": "XMLHttpRequest",
+                  "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+                    .value,
+                },
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.status === "success") {
+                    const ruleItem = document.querySelector(
+                      `.rule-item[data-rule-id="${ruleId}"]`
+                    );
+                    if (ruleItem) {
+                      ruleItem.remove();
+                    }
+  
+                    const rulesList = document.getElementById(
+                      ruleType === "post" ? "post-rules-list" : "comment-rules-list"
+                    );
+                    const noRulesAlert = document.getElementById(
+                      ruleType === "post"
+                        ? "no-post-rules-alert"
+                        : "no-comment-rules-alert"
+                    );
+  
+                    if (rulesList.children.length === 0) {
+                      noRulesAlert.classList.remove("d-none");
+                    }
+                  } else {
+                    alert(data.message || "Failed to delete the rule");
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error:", error);
+                  alert("An unexpected error occurred");
+                });
+  
+              modal.hide();
+            };
+          };
+        });
+      }
+  
+      setupRuleSubmission(
+        "post-rule-form",
+        "post-rules-list",
+        "no-post-rules-alert",
+        "post-form-errors"
+      );
+  
+      setupRuleSubmission(
+        "comment-rule-form",
+        "comment-rules-list",
+        "no-comment-rules-alert",
+        "comment-form-errors"
+      );
+  
+      setupRuleDeletion();
+    });
+  </script>
+    

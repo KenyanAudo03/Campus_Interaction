@@ -2,7 +2,9 @@
 .alert {
     animation: slideIn 0.3s ease-out;
 }
-
+body {
+    font-family: 'Inter', sans-serif;
+}
 .bg-gradient-dark {
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
 }
@@ -295,6 +297,7 @@ button i {
     width: 60%;
     overflow: hidden;
     transition: transform 0.3s ease;
+    object-fit: cover;
 }
 
 .event-image {
@@ -376,19 +379,9 @@ h1.display-4 {
 
 /* Header Styling */
 .card-title {
-    font-weight: 600;
+    /* font-weight: 600; */
     color: #333;
-}
-
-.btn-outline-primary {
-    color: #007bff;
-    border-color: #007bff;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.btn-outline-primary:hover {
-    background-color: #007bff;
-    color: #fff;
+    font-weight: bold;
 }
 
 /* Comment Form */
@@ -412,16 +405,7 @@ h1.display-4 {
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
-.btn-primary {
-    background-color: #007bff;
-    border: none;
-    padding: 0.5rem 1.5rem;
-    font-size: 0.9rem;
-}
 
-.btn-primary:hover {
-    background-color: #0056b3;
-}
 
 /* Comments Section */
 .comment-section {
@@ -504,6 +488,7 @@ h1.display-4 {
     margin: 0;
 }
 
+
 .btn-close {
     background-color: transparent;
     border: none;
@@ -569,7 +554,35 @@ textarea.form-control {
     color: #6c757d;
 }
 
+
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 1rem;
+    }
+
+    .modal-header, .modal-footer {
+        padding: 1rem;
+    }
+
+    .form-control, .form-select {
+        font-size: 0.85rem;
+        padding: 0.65rem;
+    }
+
+    .btn-primary, .btn-secondary {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+    }
+}
+/* Modern button styles */
 /* Button Styles */
+
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
 .btn-primary {
     background-color: #0d6efd;
     border-color: #0d6efd;
@@ -597,24 +610,27 @@ textarea.form-control {
     background-color: #5c636a;
     box-shadow: 0 4px 10px rgba(108, 117, 125, 0.2);
 }
+.btn-outline-primary {
+    border: 1px solid #007bff;
+    color: #007bff;
+    transition: background-color 0.3s ease;
+}
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: #fff;
+}
 
-/* Responsive Adjustments */
-@media (max-width: 576px) {
-    .modal-dialog {
-        margin: 1rem;
-    }
+.btn-outline-danger {
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    transition: background-color 0.3s ease;
+}
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
 
-    .modal-header, .modal-footer {
-        padding: 1rem;
-    }
-
-    .form-control, .form-select {
-        font-size: 0.85rem;
-        padding: 0.65rem;
-    }
-
-    .btn-primary, .btn-secondary {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.85rem;
-    }
+/* Section spacing */
+.card {
+    border-radius: 10px;
 }

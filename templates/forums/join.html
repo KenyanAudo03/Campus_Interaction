@@ -1,0 +1,64 @@
+<div class="subscribe">
+    <div class="">
+      <div class="sub-message">
+        <div class="discussion-comments">
+          <p class="back-btn">
+            <a
+              href="{% url 'forums:forum_list' %}"
+              class="forum-card-overlay"
+              ><i class="fa-solid fa-arrow-left"></i
+            ></a>
+          </p>
+          <p id="member-count">{{ forum.member_count }} <span>Members</span></p>
+          <p id="posts-count">{{ comment_count }} <span>Comments</span></p>
+          <p id="topics-count" class="topics-count">
+            {{ post_count }} <span>Topics</span>
+          </p>
+        </div>
+        <div class="search-container">
+          <div class="input-group">
+            <input
+              type="text"
+              autocomplete="off"
+              class="form-control"
+              id="forum-search-input"
+              placeholder="Search {{ forum.name }}"
+              data-forum-id="{{ forum.id }}" 
+            />
+          </div>
+          <!-- This div will hold the search suggestions -->
+          <div id="search-suggestions" class="search-suggestions"></div>
+        </div>
+        <div class="subscribe-message" id="membership-controls">
+          <!-- Non-member controls -->
+          <div
+            id="non-member-controls"
+            class="{% if membership %}hidden{% endif %}"
+          >
+            <button id="subscribe-btn" class="subscribe-btn">Subscribe</button>
+          </div>
+          <!-- Member controls -->
+          <div
+            id="member-controls"
+            class="{% if not membership or membership.role != 'member' %}hidden{% endif %}"
+          >
+          <button id="messages-btn" class="messages-btn"><i class="fa-solid fa-message"></i></button>
+          <button id="messages-btn" class="create" ><a href="{% url 'forums:create_post' forum_id=forum.id %}"><i class="fa-solid fa-plus"></i> Topic</a></button>
+            {% if forum.created_by != request.user %}
+            <button id="leave-btn" class="leave-btn">Leave</button>
+            {% endif %}
+          </div>
+          <!-- Admin controls -->
+          <div
+            id="admin-controls"
+            class="{% if not membership or membership.role != 'admin' %}hidden{% endif %}"
+          >
+            <button id="messages-btn-admin" class="messages-btn"><i class="fa-solid fa-message"></i></button>
+            <button id="messages-btn" class="create"><a href="{% url 'forums:create_post' forum_id=forum.id %}"><i class="fa-solid fa-plus"></i> Topic</a></button>
+            <button id="manage-btn" class="manage-btn"  class="manage-btn"><a href="{% url 'forums:manage_forum' forum_id=forum.id %}">Manage</a>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

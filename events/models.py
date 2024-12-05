@@ -4,9 +4,17 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from profiles.models import Profile  # Use the Profile model from profiles app
 from django.utils.translation import gettext_lazy as _
-from django.db.models import Max
+from django.db.models import Max, Q
 from rest_framework import serializers
 from django.db import transaction
+import logging
+from django.core.cache import cache
+
+
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 
 class EventCategory(models.Model):
     name = models.CharField(max_length=100, help_text="Enter the event category name.")
@@ -35,6 +43,9 @@ class EventManager(models.Manager):
         if self.start_date >= self.end_date:
             raise ValidationError('Start date must be before end date.')
 
+
+
+
 class Event(models.Model):
     EVENT_TYPE_CHOICES = [
         ('physical', 'Physical Event'),
@@ -45,24 +56,39 @@ class Event(models.Model):
         ('published', 'Published'),
         ('canceled', 'Canceled')
     ]
+    
     status = models.CharField(
         max_length=20, 
         choices=STATUS_CHOICES, 
-        default='draft'
+        default='published'
     )
-    category = models.ForeignKey(EventCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
+    allow_cancellation = models.BooleanField(
+        default=True, 
+        help_text="Allow participants to cancel their registration"
+    )
+    
+    cancellation_deadline = models.DateTimeField(
+        null=True, 
+        blank=True, 
+        help_text="Deadline for registration cancellation"
+    )
     title = models.CharField(max_length=200, help_text="Enter the event title.")
     description = models.TextField(help_text="Event description")
     event_type = models.CharField(max_length=10, choices=EVENT_TYPE_CHOICES, default='physical')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     location = models.CharField(max_length=200, help_text="Event location (optional for text-based events).", blank=True, null=True)
-    image = models.ImageField(upload_to='event_images/', null=True, blank=True)
     max_participants = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum number of participants.")
     is_public = models.BooleanField(default=True)
+    is_waitlist_open = models.BooleanField(default=True)
+    category = models.ForeignKey(EventCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
+    location = models.CharField(max_length=200, help_text="Event location (optional for text-based events).", blank=True, null=True)
+    image = models.ImageField(upload_to='event_images/', null=True, blank=True)
     campus = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, related_name='campus_events')
     organizer = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='organized_events')
-
+   
+     
+     
     # For text-based events
     content = models.TextField(blank=True, null=True, help_text="Content for text-based events")
     attachments = models.FileField(upload_to='event_attachments/', null=True, blank=True)
@@ -73,22 +99,142 @@ class Event(models.Model):
         if not self.campus and self.organizer:
             self.campus = self.organizer
         super().save(*args, **kwargs)
-   
-
+    
+    def determine_registration_status(self):
+        """
+        Centralized method to determine registration status.
+        
+        Returns:
+        - 'registered' if spots are available
+        - 'waitlist' if event is full
+        """
+        if not self.max_participants:
+            return 'registered'
+        
+        registered_count = self.registrations.filter(status='registered').count()
+        return 'registered' if registered_count < self.max_participants else 'waitlist'
+        
+    def calculate_next_waitlist_position(self):
+        """
+        Calculate the next waitlist position, reordering if needed.
+        
+        Returns:
+        - Next available waitlist position
+        """
+        with transaction.atomic():
+            waitlist_registrations = self.registrations.filter(
+                status='waitlist'
+            ).order_by('waitlist_position')
+            
+            # Reorder and reassign positions if there are gaps
+            for index, registration in enumerate(waitlist_registrations, 1):
+                registration.waitlist_position = index
+                registration.save()
+            
+            return waitlist_registrations.count() + 1
+    
     @property
     def is_full(self):
-        if self.max_participants is None:
+        """Check if event has reached maximum participants."""
+        return (
+            self.max_participants is not None and 
+            self.registrations.filter(status='registered').count() >= self.max_participants
+        )
+    
+    
+    def is_registration_open(self):
+        """
+        Check if registration is currently open
+        """
+        now = timezone.now()
+        return (
+            self.start_date <= now and 
+            (not self.end_date or now <= self.end_date)
+        )
+    def is_cancellation_allowed(self):
+        """
+        More comprehensive cancellation check
+        """
+        if not self.allow_cancellation:
             return False
-        return self.registrations.filter(status='registered').count() >= self.max_participants
-
+        
+        # Additional checks
+        current_time = timezone.now()
+        
+        # Check if event has started
+        if self.start_date and current_time > self.start_date:
+            return False
+        
+        # Check cancellation deadline
+        if self.cancellation_deadline:
+            return current_time <= self.cancellation_deadline
+        
+        # Optional: Add more sophisticated logic
+        # For example, allow cancellation up to 24 hours before event
+        if self.start_date:
+            return current_time <= (self.start_date - timezone.timedelta(days=1))
+        
+        return True
     @property
     def spots_left(self):
-        if self.max_participants is None:
-            return None
+        # Adjust logic if needed
         registered_count = self.registrations.filter(status='registered').count()
         return max(0, self.max_participants - registered_count)
 
-
+    @transaction.atomic
+    def register_participant(self, user_profile, registration_data):
+        # Count current registrations
+        registered_count = self.registrations.filter(status='registered').count()
+        
+        # Determine registration status
+        if self.max_participants is None:
+            status = 'registered'
+        elif registered_count < self.max_participants:
+            status = 'registered'
+        else:
+            status = 'waitlist'
+        
+        # Create registration
+        registration = EventRegistration.objects.create(
+            event=self,
+            participant=user_profile,
+            status=status,
+            **registration_data
+        )
+        
+        # If waitlisted, set waitlist position
+        if status == 'waitlist':
+            registration.waitlist_position = (
+                self.registrations.filter(status='waitlist')
+                .aggregate(Max('waitlist_position'))['waitlist_position__max'] or 0
+            ) + 1
+            registration.save()
+        
+        return registration, status
+    def can_register(self, user_profile):
+        """
+        Check if a user can register for this event.
+        
+        Args:
+            user_profile: User's profile
+        
+        Returns:
+            Tuple (can_register, status_message)
+        """
+        # Check for existing registration
+        existing_registration = self.registrations.filter(
+            participant=user_profile,
+            status__in=['registered', 'waitlist']
+        ).first()
+        
+        if existing_registration:
+            return False, f"Already {existing_registration.get_status_display().lower()} for this event"
+        
+        # Check event availability
+        if self.is_full:
+            return self.is_waitlist_open, 'Event is full' if not self.is_waitlist_open else 'Added to waitlist'
+        
+        return True, 'Registration available'
 
 
 class EventRegistration(models.Model):
@@ -101,101 +247,52 @@ class EventRegistration(models.Model):
     event = models.ForeignKey(
         'Event', 
         on_delete=models.CASCADE, 
-        related_name='registrations',
-        help_text=_("The event being registered for")
+        related_name='registrations'
     )
     participant = models.ForeignKey(
         'profiles.Profile', 
-        on_delete=models.CASCADE,
-        help_text=_("The user registering for the event")
+        on_delete=models.CASCADE
     )
-    registration_date = models.DateTimeField(
-    auto_now_add=True,
-    help_text=_("When the registration was created"),
-    
-)
-    attended = models.BooleanField(
-        default=False,
-        help_text=_("Whether the participant attended the event")
-    )
+    registration_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=20, 
         choices=REGISTRATION_STATUS, 
-        default='registered',
-        help_text=_("Current status of the registration")
+        default='registered'
     )
-    email = models.EmailField(
-        null=True, 
-        blank=True,
-        help_text=_("Contact email for the registration")
-    )
-    name = models.CharField(
-    max_length=255, 
-    help_text=_("Full name of the participant"),
-    null=False,  # Ensure this is set
-    blank=False  # This prevents empty strings
-)
-    waitlist_position = models.PositiveIntegerField(
-        null=True, 
-        blank=True,
-        help_text=_("Position in the waitlist if applicable")
-    )
+    email = models.EmailField(null=True, blank=True)
+    name = models.CharField(max_length=255)
+    waitlist_position = models.PositiveIntegerField(null=True, blank=True)
+    attended = models.BooleanField(default=False)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['event', 'participant'], 
-                name='unique_event_participant'
-            )
-        ]
+        unique_together = [['event', 'participant']]
         ordering = ['registration_date']
         indexes = [
             models.Index(fields=['status', 'event']),
             models.Index(fields=['registration_date']),
         ]
 
-    def __str__(self):
-        return f"{self.name} - {self.event} ({self.get_status_display()})"
-
-    def clean(self):
-        if self.status == 'waitlist' and self.waitlist_position is None:
-            raise ValidationError({
-                'waitlist_position': _('Waitlist position is required for waitlisted registrations.')
-            })
-        if self.status != 'waitlist' and self.waitlist_position is not None:
-            raise ValidationError({
-                'waitlist_position': _('Waitlist position should only be set for waitlisted registrations.')
-            })
-    def validate(self, data):
-        if not data.get('name'):
-            raise serializers.ValidationError({"name": "Name cannot be blank"})
-        return data
     def save(self, *args, **kwargs):
-        self.full_clean()
-        
-        if not self.pk:  # New registration
-            current_registrations = EventRegistration.objects.filter(
-                event=self.event, 
-                status='registered'
-            ).count()
-            
-            if self.event.max_participants and current_registrations >= self.event.max_participants:
-                self.status = 'waitlist'
-                last_position = EventRegistration.objects.filter(
-                    event=self.event,
-                    status='waitlist'
-                ).aggregate(Max('waitlist_position'))['waitlist_position__max'] or 0
-                self.waitlist_position = last_position + 1
-        
-        # Clear waitlist position if status is not waitlist
-        if self.status != 'waitlist':
-            self.waitlist_position = None
-            
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            # Prevent duplicate registrations
+            existing = EventRegistration.objects.filter(
+                event=self.event,
+                participant=self.participant
+            ).exclude(pk=self.pk).first()
 
+            if existing:
+                raise ValidationError("Registration already exists for this event.")
+
+            # Existing logic for status and waitlist
+            if not self.pk:  
+                self.status = self.event.determine_registration_status()
+                if self.status == 'waitlist':
+                    self.waitlist_position = self.event.calculate_next_waitlist_position()
+            
+            super().save(*args, **kwargs)
     def cancel_registration(self):
         """
-        Cancel this registration and move up waitlisted registrations if applicable.
+        Advanced cancellation logic with waitlist management.
         """
         with transaction.atomic():
             was_registered = self.status == 'registered'
@@ -203,50 +300,50 @@ class EventRegistration(models.Model):
             self.waitlist_position = None
             self.save()
             
+            # If a registered spot was freed, promote from waitlist
             if was_registered:
-                # Try to move the first waitlisted person to registered
-                next_waitlisted = EventRegistration.objects.filter(
-                    event=self.event,
-                    status='waitlist'
-                ).order_by('waitlist_position').first()
-                
-                if next_waitlisted:
-                    next_waitlisted.move_from_waitlist()
-            
-            return True
-
-    def move_from_waitlist(self):
+                self._promote_from_waitlist()
+    
+    def _promote_from_waitlist(self):
         """
-        Attempt to move a waitlisted registration to registered status if space is available.
+        Promote next waitlisted participant to registered status.
         """
-        if self.status != 'waitlist':
-            return False
-            
-        current_registrations = EventRegistration.objects.filter(
-            event=self.event, 
-            status='registered'
-        ).count()
+        waitlist_registrations = self.event.registrations.filter(
+            status='waitlist'
+        ).order_by('waitlist_position')
         
-        # Use the new method name here as well
-        spots_remaining = self.event.get_spots_remaining()
-            
-        if spots_remaining is None or spots_remaining > 0:
-            self.status = 'registered'
-            self.waitlist_position = None
-            self.save()
-            
-            # Reorder remaining waitlist
-            waitlist_registrations = EventRegistration.objects.filter(
-                event=self.event,
-                status='waitlist'
-            ).order_by('waitlist_position')
-            
-            for i, registration in enumerate(waitlist_registrations, 1):
-                registration.waitlist_position = i
+        for registration in waitlist_registrations:
+            if self.event.spots_left > 0:
+                registration.status = 'registered'
+                registration.waitlist_position = None
                 registration.save()
                 
-            return True
-        return False
+                # Trigger notification for promoted registration
+                self._send_promotion_notification(registration)
+            else:
+                break
+    
+    def _send_promotion_notification(self, registration):
+        """
+        Send email notification for waitlist promotion.
+        """
+        from .utils import send_promotion_email  # Avoid circular import
+        try:
+            send_promotion_email(registration)
+        except Exception as e:
+            # Log error without stopping the process
+            logger.error(f"Failed to send promotion email: {e}")
+
+    def __str__(self):
+        return f"{self.name} - {self.event} ({self.get_status_display()})"
+    
+# Recommended additional model for logging
+class RegistrationCancellationLog(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    original_status = models.CharField(max_length=20)
+    cancelled_at = models.DateTimeField(auto_now_add=True)
+    
 class Comment(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='user_comments')  # Profile is used here
@@ -275,5 +372,6 @@ class CommentLike(models.Model):
 
     def __str__(self):
         return f"{self.user} likes {self.comment}"
+
 
 
