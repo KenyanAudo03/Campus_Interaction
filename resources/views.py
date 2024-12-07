@@ -6,11 +6,6 @@ from .forms import ResourceForm
 def resource_list(request):
     resources = Resource.objects.all()
     
-<<<<<<< Updated upstream
-    return render(request, 'resources/resources.html',context)
-
-    pass
-=======
     # Process resources to add file type attributes for easier checking in the template
     for resource in resources:
         # Get file extension
@@ -22,7 +17,6 @@ def resource_list(request):
         resource.is_pdf = file_extension == 'pdf'
     
     return render(request, 'resources/resource_list.html', {'resources': resources})
->>>>>>> Stashed changes
 
 # View to upload a resource
 def upload_resource(request):
