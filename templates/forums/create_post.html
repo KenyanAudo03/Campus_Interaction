@@ -242,172 +242,229 @@
 {% endif %}
 <!-- Drag and Drop -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const dragDropArea = document.getElementById("drag-and-drop-area");
-  const hiddenFileInput = document.getElementById("hidden-file-input");
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  document.addEventListener('DOMContentLoaded', function () {
+    const createOptions = document.querySelectorAll('.create__options a');
+    const titleField = document.getElementById('title-field');
+    const textPostFields = document.getElementById('text-post-fields');
+    const imageVideoPostFields = document.getElementById('image-video-post-fields');
+    const submitButtonDiv = document.getElementById('submit-button-div');
+    const postForm = document.getElementById('post-form');
+    const dragDropArea = document.getElementById('drag-and-drop-area');
+    const hiddenFileInput = document.getElementById('hidden-file-input');
+    const contentField = postForm.querySelector('textarea[name="content"]');
+    const imageInput = postForm.querySelector('input[name="image"]');
+    const videoInput = postForm.querySelector('input[name="video"]');
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    let currentFile = null;
 
-  let currentFile = null;
-
-  dragDropArea.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dragDropArea.classList.add("drag-over");
-  });
-
-  dragDropArea.addEventListener("dragleave", () => {
-    dragDropArea.classList.remove("drag-over");
-  });
-
-  dragDropArea.addEventListener("drop", (e) => {
-    e.preventDefault();
-    dragDropArea.classList.remove("drag-over");
-    const files = e.dataTransfer.files;
-    handleFileSelection(files[0]);
-  });
-
-  const uploadIcon = dragDropArea.querySelector(".fa-upload");
-  uploadIcon.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (!currentFile) {
-      hiddenFileInput.click();
-    }
-  });
-
-  hiddenFileInput.addEventListener("change", () => {
-    const files = hiddenFileInput.files;
-    handleFileSelection(files[0]);
-  });
-
-  function handleFileSelection(file) {
-    if (!file) return;
-
-    const fileType = file.type.split("/")[0];
-    
-    // Check if the file is a .webm video
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (ext === "webm") {
-      showErrorMessage("WebM files are not supported. Please upload a different format.");
-      return;
+    function hideAllFields() {
+      titleField.style.display = 'none';
+      textPostFields.style.display = 'none';
+      imageVideoPostFields.style.display = 'none';
+      submitButtonDiv.style.display = 'none';
+      createOptions.forEach(option => option.classList.remove('active'));
     }
 
-    if (fileType !== "image" && fileType !== "video") {
-      showErrorMessage("Please upload an image or video file.");
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      showErrorMessage("File size should not exceed 10MB.");
-      return;
-    }
-
-    currentFile = file;
-
-    dragDropArea.classList.add("preview-mode");
-    dragDropArea.innerHTML = "";
-
-    const previewItem = document.createElement("div");
-    previewItem.classList.add("preview-item", "w-full", "h-full");
-
-    const progressContainer = document.createElement("div");
-    progressContainer.classList.add("upload-progress");
-    progressContainer.style.display = "none";
-
-    const progressBar = document.createElement("div");
-    progressBar.classList.add("progress-bar");
-    progressBar.style.width = "0%";
-    progressBar.style.height = "4px";
-    progressBar.style.backgroundColor = "#1e88e5";
-    progressBar.style.transition = "width 0.5s ease";
-
-    progressContainer.appendChild(progressBar);
-    previewItem.appendChild(progressContainer);
-
-    if (fileType === "image") {
-      const img = document.createElement("img");
-      img.src = URL.createObjectURL(file);
-      img.classList.add("w-full", "h-full", "object-cover", "rounded-lg");
-      previewItem.appendChild(img);
-    } else if (fileType === "video") {
-      const video = document.createElement("video");
-      video.src = URL.createObjectURL(file);
-      video.classList.add("w-full", "h-full", "object-cover", "rounded-lg");
-      video.controls = true;
-      video.loop = true;
-      previewItem.appendChild(video);
-    }
-
-    const removeBtn = document.createElement("button");
-    removeBtn.classList.add("remove-btn");
-    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-    removeBtn.onclick = () => {
-      currentFile = null;
-
-      dragDropArea.classList.remove("preview-mode");
-      dragDropArea.innerHTML = `
-      <p>Drag and drop or Upload Media <i class="fa-solid fa-upload"></i></p>
-      <input type="file" id="hidden-file-input" accept="image/*,video/*" style="display: none;" />
-    `;
-
-      const uploadIcon = dragDropArea.querySelector(".fa-upload");
-      uploadIcon.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!currentFile) {
-          hiddenFileInput.click();
-        }
-      });
-    };
-
-    previewItem.appendChild(removeBtn);
-    dragDropArea.appendChild(previewItem);
-
-    simulateUploadProgress(progressContainer, progressBar);
-
-    const imageInput = document.querySelector("input[name='image']");
-    const videoInput = document.querySelector("input[name='video']");
-    if (fileType === "image") {
-      imageInput.files = createFileList(file);
-      videoInput.value = "";
-    } else if (fileType === "video") {
-      videoInput.files = createFileList(file);
-      imageInput.value = "";
-    }
-  }
-
-  function simulateUploadProgress(progressContainer, progressBar) {
-    progressContainer.style.display = "block";
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20;
-      progressBar.style.width = `${Math.min(progress, 100)}%`;
-
-      if (progress >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
-          progressContainer.style.display = "none";
-        }, 500);
+    function showTextPost(e) {
+      e.preventDefault();
+      hideAllFields();
+      createOptions[0].classList.add('active');
+      titleField.style.display = 'block';
+      textPostFields.style.display = 'block';
+      submitButtonDiv.style.display = 'block';
+      if (currentFile) {
+        clearMediaInputs();
+        displayError('Media cleared. Switched to text post.');
       }
-    }, 500);
-  }
+    }
 
-  function createFileList(file) {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
-    return dataTransfer.files;
-  }
+    function showImageVideoPost(e) {
+      e.preventDefault();
+      hideAllFields();
+      createOptions[1].classList.add('active');
+      titleField.style.display = 'block';
+      imageVideoPostFields.style.display = 'block';
+      submitButtonDiv.style.display = 'block';
+      if (contentField.value.trim() !== '') {
+        clearTextContent();
+        displayError('Text content cleared. Switched to Image & Video post.');
+      }
+    }
 
-  function showErrorMessage(message) {
-    const errorMessage = document.createElement("div");
-    errorMessage.classList.add("error-message");
-    errorMessage.textContent = message;
+    function displayError(message) {
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'form-errors';
+      errorMessage.style.position = 'fixed';
+      errorMessage.style.bottom = '20px';
+      errorMessage.style.left = '50%';
+      errorMessage.style.transform = 'translateX(-50%)';
+      errorMessage.style.backgroundColor = '#ff3b30';
+      errorMessage.style.color = 'white';
+      errorMessage.style.padding = '12px 20px';
+      errorMessage.style.borderRadius = '7px';
+      errorMessage.style.fontSize = '16px';
+      errorMessage.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+      errorMessage.style.zIndex = '9999';
+      errorMessage.innerHTML = message;
+      document.body.appendChild(errorMessage);
 
-    document.body.appendChild(errorMessage);
+      setTimeout(() => {
+        errorMessage.remove();
+      }, 4000);
+    }
 
-    setTimeout(() => {
-      errorMessage.remove();
-    }, 4000);
-  }
-});
+    function clearMediaInputs() {
+      imageInput.value = '';
+      videoInput.value = '';
+      currentFile = null;
+      dragDropArea.classList.remove('preview-mode');
+      dragDropArea.innerHTML = `
+        <p>Drag and drop or Upload Media <i class="fa-solid fa-upload"></i></p>
+        <input type="file" id="hidden-file-input" accept="image/*,video/*" style="display: none;" />
+      `;
+      setupUploadIcon();
+    }
+
+    function clearTextContent() {
+      contentField.value = '';
+    }
+
+    function setupUploadIcon() {
+      const uploadIcon = dragDropArea.querySelector('.fa-upload');
+      uploadIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hiddenFileInput.click();
+      });
+    }
+
+    function handleFileSelection(file) {
+      if (!file) return;
+
+      const fileType = file.type.split('/')[0];
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      if (ext === 'webm') {
+        displayError('WebM files are not supported. Please upload a different format.');
+        return;
+      }
+
+      if (fileType !== 'image' && fileType !== 'video') {
+        displayError('Please upload an image or video file.');
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        displayError('File size should not exceed 10MB.');
+        return;
+      }
+
+      currentFile = file;
+      dragDropArea.classList.add('preview-mode');
+      dragDropArea.innerHTML = '';
+      const previewItem = document.createElement('div');
+      previewItem.classList.add('preview-item', 'w-full', 'h-full');
+
+      const progressContainer = document.createElement('div');
+      progressContainer.classList.add('upload-progress');
+      progressContainer.style.display = 'none';
+
+      const progressBar = document.createElement('div');
+      progressBar.classList.add('progress-bar');
+      progressBar.style.width = '0%';
+      progressBar.style.height = '4px';
+      progressBar.style.backgroundColor = '#1e88e5';
+      progressBar.style.transition = 'width 0.5s ease';
+
+      progressContainer.appendChild(progressBar);
+      previewItem.appendChild(progressContainer);
+
+      if (fileType === 'image') {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.className = 'w-full h-full object-cover rounded-lg';
+        previewItem.appendChild(img);
+      } else if (fileType === 'video') {
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(file);
+        video.className = 'w-full h-full object-cover rounded-lg';
+        video.controls = true;
+        video.loop = true;
+        previewItem.appendChild(video);
+      }
+
+      const removeBtn = document.createElement('button');
+      removeBtn.classList.add('remove-btn');
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.addEventListener('click', () => {
+        clearMediaInputs();
+        displayError('Media removed. Add text content or media.');
+      });
+
+      previewItem.appendChild(removeBtn);
+      dragDropArea.appendChild(previewItem);
+
+      simulateUploadProgress(progressContainer, progressBar);
+
+      if (fileType === 'image') {
+        imageInput.files = createFileList(file);
+        videoInput.value = '';
+      } else if (fileType === 'video') {
+        videoInput.files = createFileList(file);
+        imageInput.value = '';
+      }
+    }
+
+    function simulateUploadProgress(progressContainer, progressBar) {
+      progressContainer.style.display = 'block';
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        progressBar.style.width = `${Math.min(progress, 100)}%`;
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            progressContainer.style.display = 'none';
+          }, 500);
+        }
+      }, 500);
+    }
+
+    function createFileList(file) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      return dataTransfer.files;
+    }
+
+    dragDropArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dragDropArea.classList.add('drag-over');
+    });
+
+    dragDropArea.addEventListener('dragleave', () => {
+      dragDropArea.classList.remove('drag-over');
+    });
+
+    dragDropArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragDropArea.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      handleFileSelection(file);
+    });
+
+    hiddenFileInput.addEventListener('change', () => {
+      const file = hiddenFileInput.files[0];
+      handleFileSelection(file);
+    });
+
+    createOptions[0].addEventListener('click', showTextPost);
+    createOptions[1].addEventListener('click', showImageVideoPost);
+
+    setupUploadIcon();
+    showTextPost({ preventDefault: () => {} });
+  });
 </script>
+
 <!-- Counting Title -->
 <script>
   const titleInput = document.getElementById("topic__title");

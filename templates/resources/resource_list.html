@@ -1,0 +1,39 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'css/resources/styles.css' %}">
+
+<h1>Resources</h1>
+
+<!-- Centered Buttons for Resources and Upload Resource Links -->
+<div class="button-container">
+    <a href="{% url 'resources' %}" class="btn">Resources</a>
+    <a href="{% url 'upload_resource' %}" class="btn">Upload Resource</a>
+</div>
+
+<!-- Display resources in a grid layout -->
+{% if resources %}
+    <ul class="resource-list">
+        {% for resource in resources %}
+        <li class="resource-item">
+            <div class="resource-box">
+                <strong>{{ resource.title }}</strong>
+                <p>Type: {{ resource.get_category_display }}</p>  <!-- Display the resource type -->
+
+                <!-- Check if the file is an image or PDF for preview -->
+                {% if resource.is_pdf %}
+                    <iframe src="{{ resource.file.url }}" width="100%" height="300px" frameborder="0"></iframe>
+                {% elif resource.is_image %}
+                    <img src="{{ resource.file.url }}" alt="Image preview" style="width:100%; max-height: 200px; object-fit: cover;">
+                {% else %}
+                    <p>No preview available</p>
+                {% endif %}
+                
+                <!-- Download button -->
+                <a href="{{ resource.file.url }}" class="download-button" download>Download</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No resources available.</p>
+{% endif %}

@@ -457,6 +457,15 @@ body.modal-open {
   position: relative;
 }
 
+.post-clickable-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
 .post-link {
   position: absolute;
   top: 0;
@@ -475,6 +484,11 @@ body.modal-open {
   z-index: 2;
 }
 
+.post-content {
+  user-select: text; 
+  z-index: 0;
+}
+
 .post:hover {
   background-color: rgba(0, 0, 0, 0.03);
   cursor: pointer;
@@ -484,10 +498,12 @@ body.modal-open {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Prevent text selection while maintaining clickability */
-.post {
+/* Prevent text selection on the clickable area */
+.post-clickable-area {
   user-select: none;
 }
+
+
 
 /* Ensure interactive elements remain clickable */
 .post-stats .stat-item,
@@ -497,7 +513,7 @@ body.modal-open {
 .post-author img {
   cursor: pointer;
   position: relative;
-  z-index: 10;
+  z-index: 4;
 }
 .post-author {
   display: flex;
@@ -575,8 +591,10 @@ body.modal-open {
   margin-left: 5px;
 }
 .hashtag {
-  color: blue;
+  color: #007bff;
   text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
 }
 
 .hashtag:hover {
@@ -596,7 +614,8 @@ body.modal-open {
 .media-container img {
   width: 100%;
   max-height: 400px;
-  object-fit: cover;
+  background-color: #000;
+  object-fit: contain;
   display: block;
 }
 
@@ -699,7 +718,9 @@ body.modal-open {
   font-weight: bold;
   margin: 0;
 }
-.left-members h3 , .comment-rules h3, .post-rules h3 {
+.left-members h3,
+.comment-rules h3,
+.post-rules h3 {
   font-size: 16px;
   color: #1b1f23;
   font-weight: bold;
@@ -723,11 +744,11 @@ body.modal-open {
   border-bottom: 1px solid #ebeef0;
   transition: background-color 0.1s;
 }
-.general__managing__users{
+.general__managing__users {
   border-bottom: 1px solid #ebeef0;
-  border:1px solid #ebeef0; ;
+  border: 1px solid #ebeef0;
 }
-.manage__users{
+.manage__users {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -735,21 +756,25 @@ body.modal-open {
   padding: 8px 16px;
 }
 
-.member:last-child, .manage__users:last-child {
+.member:last-child,
+.manage__users:last-child {
   border-bottom: none;
 }
 
-.member:hover, .general__managing__users:hover {
+.member:hover,
+.general__managing__users:hover {
   background-color: #f6f8fa;
 }
 
-.member img, .manage__users img {
+.member img,
+.manage__users img {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
 }
-.member .image-i, .manage__users .image-i {
+.member .image-i,
+.manage__users .image-i {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -761,7 +786,8 @@ body.modal-open {
   justify-content: center;
 }
 
-.member-info, .manage__users .member-info {
+.member-info,
+.manage__users .member-info {
   flex: 1;
 }
 
@@ -924,7 +950,7 @@ body.modal-open {
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 10;
   min-width: 150px;
   overflow: hidden;
   animation: fadeIn 0.2s ease;
@@ -1073,7 +1099,7 @@ body.modal-open {
   margin-bottom: 12px;
 }
 
-.profile-pic {
+.flagged-post-card .profile-pic {
   width: 48px;
   height: 48px;
   border-radius: 50%;

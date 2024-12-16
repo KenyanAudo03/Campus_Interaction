@@ -18,6 +18,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<div class="pageContext" data-post-context="post_detail"></div>
+
 
 <!-- Forum Header -->
 <div class="py-5" style="position: relative; color: #fff">
@@ -146,7 +148,7 @@
           >
             <button id="messages-btn-admin" class="messages-btn"><i class="fa-solid fa-message"></i></button>
             <button id="messages-btn" class="create"><a href="{% url 'forums:create_post' forum_id=forum.id %}"><i class="fa-solid fa-plus"></i> Topic</a></button>
-            <button id="manage-btn" class="manage-btn">Manage</button>
+            <button id="manage-btn" class="manage-btn"><a href="{% url 'forums:manage_forum' forum_id=forum.id %}">Manage</a></button>
           </div>
         </div>
       </div>
@@ -185,61 +187,68 @@
                 </div>
               </div>
             </div>
-  
+            
+            
             <!-- Post Options Menu -->
             <div class="post-options">
-              
               <button class="options-btn" onclick="toggleMenu('{{ post.id }}')">
                 <i class="fa-solid fa-ellipsis"></i>
               </button>
+            
               <div class="options-menu" id="menu-{{ post.id }}">
                 {% if membership %}
-                {% if user == post.user %}
-                <button class="menu-item"><i class="fa-solid fa-pen"></i> Edit</button>
-
-                <button class="menu-item toggle-visibility-btn" data-post-id="{{ post.id }}" data-approved="{{ post.approved }}">
-                  {% if post.approved %}
-                    <i class="fa-solid fa-eye-slash"></i> Hide
-                  {% else %}
-                    <i class="fa-solid fa-eye"></i> Show
-                  {% endif %}
-                </button>
-
-                <button class="menu-item delete-btn" onclick="deletePost('{{ post.id }}')">
-                  <i class="fa-solid fa-trash" style="color: #c0111a"></i> Delete
-                </button>
-
-                {% elif member_info.role == "Main Admin" %}
-                {% if post.flag_count > 0 %}
-
-                  <button class="menu-item toggle-visibility-btn" data-post-id="{{ post.id }}" data-approved="{{ post.approved }}">
-                    {% if post.approved %}
-                      <i class="fa-solid fa-eye-slash"></i> Hide
-                    {% else %}
-                      <i class="fa-solid fa-eye"></i> Show
+                  {% if user == post.user %}
+                    {% if post.created_at|is_editable %}
+                      <a href="{% url 'forums:edit_post' forum_id=forum.id post_id=post.id %}">
+                        <button class="menu-item">
+                          <i class="fa-solid fa-pen"></i> Edit
+                        </button>
+                      </a>
                     {% endif %}
-                  </button>
-                  
-                  <button class="menu-item delete-btn" onclick="deletePost('{{ post.id }}')">
-                    <i class="fa-solid fa-trash" style="color: #c0111a"></i> Delete
-                  </button>
-                {% endif %}
+            
+                    <!-- Post Creator Buttons -->
+                    <button class="menu-item toggle-visibility-btn" data-post-id="{{ post.id }}" data-approved="{{ post.approved }}">
+                      {% if post.approved %}
+                        <i class="fa-solid fa-eye-slash"></i> Hide
+                      {% else %}
+                        <i class="fa-solid fa-eye"></i> Show
+                      {% endif %}
+                    </button>
+                    
+                    <button class="menu-item delete-btn" onclick="deletePost('{{ post.id }}')">
+                      <i class="fa-solid fa-trash delete-icon"></i> Delete
+                    </button>
+                  {% elif forum.created_by == user %}
+                    <!-- Forum Admin Buttons -->
+                    {% if post.flag_count > 0 %}
+                      <button class="menu-item toggle-visibility-btn" data-post-id="{{ post.id }}" data-approved="{{ post.approved }}">
+                        {% if post.approved %}
+                          <i class="fa-solid fa-eye-slash"></i> Hide
+                        {% else %}
+                          <i class="fa-solid fa-eye"></i> Show
+                        {% endif %}
+                      </button>
+            
+                      <button class="menu-item delete-btn" onclick="deletePost('{{ post.id }}')">
+                        <i class="fa-solid fa-trash delete-icon"></i> Delete
+                      </button>
+                    {% endif %}
+                  {% else %}
+                    <button class="menu-item" onclick="openFlagModal('{{ post.id }}')">
+                      <i class="fa-solid fa-flag"></i> Flag
+                    </button>
+                  {% endif %}
+            
+                  {% if post.image or post.video %}
+                    <button class="menu-item download-media-btn">
+                      <i class="fa fa-download" aria-hidden="true"></i> Save
+                    </button>
+                  {% endif %}
                 {% else %}
-                <button class="menu-item" onclick="openFlagModal('{{ post.id }}')">
-                  <i class="fa-solid fa-flag"></i> Flag
-                </button>
+                  <p class="menu-item warning-text">Must subscribe to see menu</p>
                 {% endif %}
-
-                {% if post.imag or post.video %}
-                <button class="menu-item" id="download_image_video">
-                    <i class="fa fa-download" aria-hidden="true"></i> Save
-                </button>
-                {% endif %}
-                {% else %}
-              <p class="menu-item" style="color: red">Must subscribe to see menu</p>
-              {% endif %}
               </div>
-            </div>
+            </div>                    
           </div>
   
           <div class="post-content">
@@ -255,7 +264,7 @@
               .media-container.videos {
                 max-width: 100%;
                 width: 100%;
-                height: 400px;
+                height: 350px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -468,7 +477,6 @@
     </div>
   </div>
 </div>
-
 <!-- Flag Post -->
 {% include "forums/flag_topics.html" %}
 <!-- All JS -->
@@ -568,5 +576,22 @@
       }
     });
   </script>
+
+  <!-- Open new tab if Comment content has links -->
+   <script>
+    document.addEventListener("DOMContentLoaded", function() {
+  const commentContents = document.querySelectorAll(".comment-content");
+
+  commentContents.forEach(function(comment) {
+    const links = comment.querySelectorAll("a");
+
+    links.forEach(function(link) {
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener noreferrer");
+    });
+  });
+});
+
+   </script>
 
 {% endblock %}

@@ -55,4 +55,5 @@ urlpatterns = [
     path('forum/<int:forum_id>/add_comment_rule/', views.add_comment_rule, name='add_comment_rule'),
     path('delete_post_rule/<int:rule_id>/', views.delete_post_rule, name='delete_post_rule'),
     path('delete_comment_rule/<int:rule_id>/', views.delete_comment_rule, name='delete_comment_rule'),
+    path('forum/<int:forum_id>/post/<int:post_id>/edit/', views.edit_post, name='edit_post'),
 ]

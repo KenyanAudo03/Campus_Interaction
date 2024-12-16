@@ -82,7 +82,6 @@ class Event(models.Model):
     is_public = models.BooleanField(default=True)
     is_waitlist_open = models.BooleanField(default=True)
     category = models.ForeignKey(EventCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
-    location = models.CharField(max_length=200, help_text="Event location (optional for text-based events).", blank=True, null=True)
     image = models.ImageField(upload_to='event_images/', null=True, blank=True)
     campus = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, related_name='campus_events')
     organizer = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='organized_events')
@@ -153,28 +152,29 @@ class Event(models.Model):
         )
     def is_cancellation_allowed(self):
         """
-        More comprehensive cancellation check
+        Comprehensive cancellation eligibility check with detailed status
         """
-        if not self.allow_cancellation:
-            return False
-        
-        # Additional checks
         current_time = timezone.now()
+
+        # Check if cancellation is globally disabled
+        if not self.allow_cancellation:
+            return False, "Cancellations are not allowed for this event"
         
-        # Check if event has started
+        # Check if event has already started
         if self.start_date and current_time > self.start_date:
-            return False
+            return False, "Cannot cancel after event has started"
         
-        # Check cancellation deadline
-        if self.cancellation_deadline:
-            return current_time <= self.cancellation_deadline
+        # Check specific cancellation deadline
+        if self.cancellation_deadline and current_time > self.cancellation_deadline:
+            return False, "Cancellation deadline has passed"
         
-        # Optional: Add more sophisticated logic
-        # For example, allow cancellation up to 24 hours before event
+        # Optional: 24-hour before event cancellation rule
         if self.start_date:
-            return current_time <= (self.start_date - timezone.timedelta(days=1))
+            cancellation_cutoff = self.start_date - timezone.timedelta(days=1)
+            if current_time > cancellation_cutoff:
+                return False, "Cancellations are only allowed up to 24 hours before the event"
         
-        return True
+        return True, "Cancellation allowed"
     @property
     def spots_left(self):
         # Adjust logic if needed
@@ -292,15 +292,25 @@ class EventRegistration(models.Model):
             super().save(*args, **kwargs)
     def cancel_registration(self):
         """
-        Advanced cancellation logic with waitlist management.
+        Advanced cancellation logic with comprehensive checks
         """
+        if self.status == 'cancelled':
+            raise ValidationError("Registration is already cancelled")
+        
         with transaction.atomic():
             was_registered = self.status == 'registered'
             self.status = 'cancelled'
             self.waitlist_position = None
             self.save()
             
-            # If a registered spot was freed, promote from waitlist
+            # Logging cancellation
+            RegistrationCancellationLog.objects.create(
+                event=self.event,
+                user=self.participant.user,  # Assuming Profile has a user relationship
+                original_status=self.status
+            )
+            
+            # Promote from waitlist if a registered spot was freed
             if was_registered:
                 self._promote_from_waitlist()
     

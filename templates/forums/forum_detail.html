@@ -16,6 +16,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+
+<div class="pageContext" data-post-context="forum_detail"></div>
+
 <!-- Forum Header -->
 <div class="py-5" style="position: relative; color: #fff">
   {% if forum.display_picture %}
@@ -116,9 +119,13 @@
         />
         <div class="member-info">
           <div class="member-name">
-            <a href="{% url 'chat_room' username=member_info.user.username %}">
-              {{ member_info.user.username }}
-            </a>
+            {% if member_info.user.id != request.user.id %}
+          <a href="{% url 'chat_room' username=member_info.user.username %}">
+            {{ member_info.user.username }}
+          </a>
+        {% else %}
+          {{ member_info.user.username }}
+        {% endif %}
           </div>          
           <div class="member-likes">{{ member_info.post_likes }} likes</div>
         </div>
@@ -155,44 +162,47 @@
       </div>
 
       {% endif %} {% endif %}
-      {% if comment_rules %}
-      <div class="comment-rules">
-        <h3>Comment Rules</h3>
-        <ul id="comment-rules-list" class="list-group">
-          {% for rule in comment_rules %}
-          <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
-            <div class="rule-content">
-              <strong>Rule:</strong> {{ rule.rule_text }}
-              <br />
-              <small style="color: #6c757d"
-                >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
-              >
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-      {% if post_rules %}
-      <div class="post-rules">
-        <h3>Post Rules</h3>
-        <ul id="post-rules-list" class="list-group">
-          {% for rule in post_rules %}
-          <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
-            <div class="rule-content">
-              <strong>Rule:</strong> {{ rule.rule_text }}
-              <br />
-              <small style="color: #6c757d"
-                >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
-              >
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
+     
     </div>
+    <div class="members-list">
+    {% if comment_rules %}
+    <div class="comment-rules">
+      <h3>Comment Rules</h3>
+      <ul id="comment-rules-list" class="list-group">
+        {% for rule in comment_rules %}
+        <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
+          <div class="rule-content">
+            <strong>Rule:</strong> {{ rule.rule_text }}
+            <br />
+            <small style="color: #6c757d"
+              >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
+            >
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if post_rules %}
+    <div class="post-rules">
+      <h3>Post Rules</h3>
+      <ul id="post-rules-list" class="list-group">
+        {% for rule in post_rules %}
+        <li class="list-group-item rule-item" data-rule-id="{{ rule.id }}">
+          <div class="rule-content">
+            <strong>Rule:</strong> {{ rule.rule_text }}
+            <br />
+            <small style="color: #6c757d"
+              >Created at: {{ rule.created_at|date:"H:i d/m/Y" }}</small
+            >
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   </div>
+</div>
   <div class="main-content">
     <!-- SORTING -->
     <div class="content-header">
@@ -210,7 +220,7 @@
         {% if post.approved or post.user == request.user %}
           <article class="post" id="post-{{ post.id }}">
             <a href="{% url 'forums:post_detail' forum_id=post.forum.id post_id=post.id %}" class="post-link"></a>
-            <div class="post-edge-link"></div>
+            <div class="post-clickable-area"></div>
             <div class="author__options">
               <div class="post-author">
                 <img src="{{ post.user.profile.profile_pic.url }}" alt="{{ post.user.username }} Profile" />
@@ -242,7 +252,11 @@
                 <div class="options-menu" id="menu-{{ post.id }}">
                   {% if membership %}
                     {% if user == post.user %}
-                      <button class="menu-item"><i class="fa-solid fa-pen"></i> Edit</button>
+                    {% if post.created_at|is_editable %}
+                      <a href="{% url 'forums:edit_post' forum_id=forum.id post_id=post.id %}">
+                        <button class="menu-item"><i class="fa-solid fa-pen"></i> Edit</button>
+                      </a>
+                    {% endif %}
                       <button class="menu-item toggle-visibility-btn" data-post-id="{{ post.id }}" data-approved="{{ post.approved }}">
                         {% if post.approved %}
                           <i class="fa-solid fa-eye-slash"></i> Hide
@@ -258,8 +272,8 @@
                         <i class="fa-solid fa-flag"></i> Flag
                       </button>
                     {% endif %}
-                    {% if post.imag or post.video %}
-                      <button class="menu-item" id="download_image_video">
+                    {% if post.image or post.video %}
+                      <button class="menu-item download-media-btn">
                         <i class="fa fa-download" aria-hidden="true"></i> Save
                       </button>
                     {% endif %}
@@ -272,17 +286,62 @@
             <div class="post-content">
               <h4>{{ post.title }}</h4>
               <p>{{ post.content|urlize|linebreaks|truncatewords:60 }}</p>
+              <style>
+                .media-container.videos {
+                  max-width: 100%;
+                  width: 100%;
+                  height: 350px;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                }
+    
+                .plyr {
+                  width: 100%;
+                  height: 100%;
+                }
+                video {
+                  width: 100%;
+                  height: 230%;
+                  object-fit: contain;
+                }
+    
+                @media (max-width: 768px) {
+                  .media-container.videos {
+                    height: 200px;
+                  }
+                }
+    
+                @media (max-width: 480px) {
+                  .media-container.videos {
+                    height: 200px;
+                  }
+                }
+                .player {
+                  opacity: 0.7;
+                  transition: opacity 0.3s ease;
+                }
+                .player.video-loaded {
+                  opacity: 1;
+                }
+              </style>
     
               {% if post.image %}
                 <div class="media-container">
                   <img src="{{ post.image.url }}" alt="Post image" />
                 </div>
               {% elif post.video %}
-                <div class="media-container videos">
-                  <video controls crossorigin playsinline id="player-{{ post.id }}" class="player">
-                    <source src="{{ post.video.url }}" type="video/mp4" />
-                  </video>
-                </div>
+              <div class="media-container videos">
+                <video
+                  controls
+                  crossorigin
+                  playsinline
+                  id="player-{{ post.id }}"
+                  class="player"
+                >
+                  <source src="{{ post.video.url }}" type="video/mp4" />
+                </video>
+              </div>
               {% endif %}
             </div>
             <div class="post-stats">
@@ -386,6 +445,7 @@
     </div>
   </div>
 </div>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <!-- Flag Post -->
  {% include "forums/flag_topics.html" %}
 <!-- Partial JS-->

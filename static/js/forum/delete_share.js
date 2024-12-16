@@ -1,3 +1,4 @@
+// Show Post Option menu
 function toggleMenu(postId) {
   const menu = document.getElementById(`menu-${postId}`);
   const isDisplayed = menu.style.display === "block";
@@ -25,9 +26,9 @@ function toggleMenu(postId) {
   }
 }
 
+// Copy the Links for posts during share
 function copyToClipboard(text, postId) {
   const menu = document.querySelector(".options-menu");
-  
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard
@@ -46,7 +47,6 @@ function copyToClipboard(text, postId) {
     menu.style.display = "none";
   }
 }
-
 
 function fallbackCopyText(text) {
   const textarea = document.createElement("textarea");
@@ -69,60 +69,63 @@ function fallbackCopyText(text) {
   document.body.removeChild(textarea);
 }
 
+// share posts
 function sharePost(postId) {
-  const forumId = document.querySelector('[data-forum-id]').getAttribute('data-forum-id');
+  const forumId = document
+    .querySelector("[data-forum-id]")
+    .getAttribute("data-forum-id");
   const url = `${window.location.origin}/forums/forum/${forumId}/post/${postId}`;
   copyToClipboard(url);
 }
 
-function deletePost(postId) {
-  // Show the custom MDB confirmation modal
-  $("#deletePostModal").modal("show");
+// Download Video/Images
+window.onload = function () {
+  const postContext = $(".pageContext").data("post-context");
 
-  // When the user clicks "Delete" in the modal
-  $("#confirmDeleteBtn")
-    .off("click")
-    .on("click", function () {
-      $.ajax({
-        url: `/forums/post/${postId}/delete/`,
-        type: "DELETE",
-        headers: {
-          "X-CSRFToken": getCsrfToken(),
-        },
-        dataType: "json",
-        success: function (data) {
-          console.log(data); // Log the server response for debugging
-          if (data.status === "success") {
-            // Remove the post from the DOM
-            $(`#post-${postId}`).fadeOut(300, function () {
-              $(this).remove();
-            });
+  window.deletePost = function (postId) {
+    $("#deletePostModal").modal("show");
 
-            // Update the post count in the header from the server's response
-            $(".content-header h2").text(`${data.post_count} Topics`); // Use the post_count from the server
-            $(".topics-count")
-              .text(`${data.post_count} `)
-              .append("<span>Topics</span>");
+    $("#confirmDeleteBtn")
+      .off("click")
+      .on("click", function () {
+        $.ajax({
+          url: `/forums/post/${postId}/delete/`,
+          type: "DELETE",
+          headers: {
+            "X-CSRFToken": getCsrfToken(),
+          },
+          dataType: "json",
+          success: function (data) {
+            if (data.status === "success") {
+              if (postContext === "post_detail") {
+                window.location.href = `/forums/${data.forum_id}/`;
+              } else if (postContext === "forum_detail") {
+                $(`#post-${postId}`).fadeOut(300, function () {
+                  $(this).remove();
+                });
+                $(".content-header h2").text(`${data.post_count} Topics`);
+                $(".topics-count")
+                  .text(`${data.post_count} `)
+                  .append("<span>Topics</span>");
+                showNotification("Post deleted successfully");
+              }
+            } else {
+              showNotification(data.message, "error");
+            }
+          },
+          error: function () {
+            showNotification("Failed to delete post", "error");
+          },
+        });
 
-            showNotification("Post deleted successfully");
-          } else {
-            showNotification(data.message, "error");
-          }
-        },
-        error: function (xhr, status, error) {
-          showNotification("Failed to delete post", "error");
-        },
+        $("#deletePostModal").modal("hide");
       });
 
-      // Close the modal after the deletion is confirmed
-      $("#deletePostModal").modal("hide");
+    $("#deletePostModal").on("hidden.bs.modal", function () {
+      $("#confirmDeleteBtn").off("click");
     });
-
-  // Close the modal when clicking "Cancel"
-  $("#deletePostModal").on("hidden.bs.modal", function () {
-    $("#confirmDeleteBtn").off("click"); // Remove previous event handler to avoid multiple triggers
-  });
-}
+  };
+};
 
 function getCsrfToken() {
   return $('input[name="csrfmiddlewaretoken"]').val();
@@ -160,57 +163,90 @@ function showNotification(message, type = "info") {
   }, 3000);
 }
 
-
-
-document.addEventListener('DOMContentLoaded', () => {
-  const saveButton = document.getElementById('download_image_video');
-  const mediaContainer = document.querySelector('.media-container');
-  
+document.addEventListener("DOMContentLoaded", () => {
   // Function to generate a random filename starting with camphub
   function generateRandomFilename(type) {
     const randomString = Math.random().toString(36).substring(2, 10);
     return `camphub_${type}_${randomString}`;
   }
-  
-  if (saveButton && mediaContainer) {
-    saveButton.addEventListener('click', () => {
-      let downloadUrl = '';
-      let fileName = '';
-      // Check for image
-      const image = mediaContainer.querySelector('img');
-      if (image) {
-        downloadUrl = image.src;
-        fileName = generateRandomFilename('image') + '.jpg';
-      }
-      // Check for video
-      const video = mediaContainer.querySelector('video');
-      if (video) {
-        const source = video.querySelector('source');
-        if (source) {
-          downloadUrl = source.src;
-          fileName = generateRandomFilename('video') + '.mp4';
+
+  // Add event listeners to all download buttons
+  function attachDownloadListeners() {
+    const downloadButtons = document.querySelectorAll(".download-media-btn");
+
+    downloadButtons.forEach((saveButton) => {
+      saveButton.addEventListener("click", (event) => {
+        // Find the closest post container to ensure we're in the right context
+        const postContainer = event.target.closest(".post");
+
+        if (!postContainer) {
+          console.error("Could not find post container");
+          return;
         }
-      }
-      // If media found, trigger download
-      if (downloadUrl) {
-        fetch(downloadUrl)
-          .then(response => response.blob())
-          .then(blob => {
-            // Create a temporary anchor element to trigger download
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          })
-          .catch(error => {
-            console.error('Download failed:', error);
-            alert('Failed to download the media file.');
-          });
-      } else {
-        alert('No media found to download.');
-      }
+
+        // Find media container within the specific post
+        const mediaContainer = postContainer.querySelector(".media-container");
+
+        if (!mediaContainer) {
+          console.error("No media container found in this post");
+          alert("No media found to download.");
+          return;
+        }
+
+        let downloadUrl = "";
+        let fileName = "";
+
+        // Check for image
+        const image = mediaContainer.querySelector("img");
+        if (image) {
+          downloadUrl = image.src;
+          fileName = generateRandomFilename("image") + ".jpg";
+        }
+
+        // Check for video
+        const video = mediaContainer.querySelector("video");
+        if (video) {
+          const source = video.querySelector("source");
+          if (source) {
+            downloadUrl = source.src;
+            fileName = generateRandomFilename("video") + ".mp4";
+          }
+        }
+
+        // If media found, trigger download
+        if (downloadUrl) {
+          fetch(downloadUrl)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.blob();
+            })
+            .then((blob) => {
+              // Create a temporary anchor element to trigger download
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(blob);
+              link.download = fileName;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            })
+            .catch((error) => {
+              console.error("Download failed:", error);
+              alert("Failed to download the media file. " + error.message);
+            });
+        } else {
+          alert("No media found to download.");
+        }
+      });
     });
   }
+
+  // Initial attachment of listeners
+  attachDownloadListeners();
+
+  // Optional: If you're using dynamic content loading,
+  // you might want to re-attach listeners after content changes
+  // This is a placeholder for such a mechanism
+  // window.addEventListener('contentLoaded', attachDownloadListeners);
 });

@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     config.urls.cancel(this.eventId), 
                     {
                         method: 'POST',
+                        credentials: 'include',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRFToken': utils.getCsrfToken()
@@ -165,8 +166,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     let errorMessage = response.error || 'Failed to cancel registration';
                     
                     // Log additional details for debugging
-                    console.error('Cancellation error details:', response.details);
-                    
+                    // console.error('Cancellation error details:', response.details);
+                    console.error('Cancellation Failed:', {
+                        eventId: this.eventId,
+                        errorDetails: response.details,
+                        timestamp: new Date().toISOString()});
                     // Provide more context in the error message
                     if (response.details) {
                         errorMessage += `. Total registrations: ${response.details.total_registrations}`;

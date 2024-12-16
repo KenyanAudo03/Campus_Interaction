@@ -27,7 +27,7 @@
 />
 
 <!-- Forum Header -->
-<div class="py-5" style="position: relative; color: #fff">
+<div class="py-5"style="position: relative; color: #fff">
   {% if forum.display_picture %}
   <div
     style="
@@ -162,7 +162,7 @@
   <div class="main-content">
     <!-- SORTING -->
     <div class="content-header">
-      <h2 id="post-count-heading">{{ drafts_count }} Drafts</h2>
+      <h2 id="draft-count-heading">{{ drafts_count }} Drafts</h2>
     <span style="font-size: 16px; font-weight: bold;">Auto-deletion after 1 week</span>
       
       <select class="sort-dropdown" id="sort-dropdown">
@@ -204,14 +204,11 @@
           </div>
           <!-- Post Options Menu -->
           <div class="post-options">
-            <button class="options-btn" onclick="toggleMenu('{{ post.id }}')">
+            <button class="options-btn" onclick="toggleMenu('{{ draft.id }}')">
               <i class="fa-solid fa-ellipsis"></i>
             </button>
-            <div class="options-menu" id="menu-{{ post.id }}">
+            <div class="options-menu" id="menu-{{ draft.id }}">
               {% if user == draft.user %}
-              <button class="menu-item">
-                <i class="fa-solid fa-pen"></i> Edit
-              </button>
               <button class="menu-item post-btn" data-id="{{ draft.id }}">
                 <i class="fa fa-upload" aria-hidden="true"></i> Post
               </button>
@@ -283,7 +280,7 @@
       </article>
       {% endfor %} {% else %}
 
-      <p>You don't have any drafts yet for this forum.</p>
+      <p style="display: flex; justify-content: center; align-items: center; height: 20vh;">You don't have any drafts yet for this forum.</p>
       {% endif %}
     </div>
   </div>
@@ -439,59 +436,84 @@
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const postButtons = document.querySelectorAll(".post-btn");
+    const draftCountHeading = document.getElementById("draft-count-heading");
 
     postButtons.forEach((button) => {
       button.addEventListener("click", () => {
         const draftId = button.getAttribute("data-id");
 
-        // Send AJAX request to post the draft
         fetch(`/forums/post_draft/${draftId}/`, {
           method: "POST",
           headers: {
-            "X-CSRFToken": getCSRFToken(), // Use Django's CSRF protection
+            "X-CSRFToken": getCSRFToken(),
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({}), // Send data if necessary
+          body: JSON.stringify({}),
         })
           .then((response) => response.json())
           .then((data) => {
             if (data.status === "success") {
-              // Update UI without reload
               const draftElement = document.getElementById(`post-${draftId}`);
               if (draftElement) {
-                draftElement.remove(); // Remove draft from the list
+                draftElement.remove();
               }
-              alert(data.message); // Optionally show success message
+              updateDraftCount();
+              showMessage(data.message, "success");
             } else {
-              alert(data.message); // Show error message
+              showMessage(data.message, "error");
             }
           })
-          .catch((error) => console.error("Error:", error));
+          .catch(() => {
+            showMessage("An error occurred. Please try again.", "error");
+          });
       });
     });
-  });
 
-  // Function to get CSRF token from the cookie (Django-specific)
-  function getCSRFToken() {
-    const name = "csrftoken";
-    const cookies = document.cookie.split(";");
-    for (let cookie of cookies) {
-      cookie = cookie.trim();
-      if (cookie.startsWith(name + "=")) {
-        return cookie.substring(name.length + 1);
+    function updateDraftCount() {
+      const currentCount = parseInt(draftCountHeading.textContent);
+      if (!isNaN(currentCount) && currentCount > 0) {
+        draftCountHeading.textContent = `${currentCount - 1} Drafts`;
       }
     }
-    return "";
-  }
-</script>
 
-<script>
-  setTimeout(function() {
-    const notification = document.getElementById('auto-deletion-notification');
-    if (notification) {
-      notification.style.display = 'none';
+    function getCSRFToken() {
+      const name = "csrftoken";
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          return cookie.substring(name.length + 1);
+        }
+      }
+      return "";
     }
-  }, 5000); 
-</script>
 
+    function showMessage(message, type) {
+      const notification = document.createElement("div");
+      notification.className = `notification ${type}`;
+      notification.innerText = message;
+
+      Object.assign(notification.style, {
+        position: "fixed",
+        bottom: "20px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        backgroundColor: type === "success" ? "#4CAF50" : "#F44336",
+        color: "#fff",
+        padding: "10px 20px",
+        borderRadius: "5px",
+        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.3)",
+        fontSize: "14px",
+        zIndex: "1000",
+        textAlign: "center",
+      });
+
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  });
+</script>
 {% endblock %}

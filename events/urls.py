@@ -11,7 +11,6 @@ from . import api_views
 from .views import (
     EventListView,
     EventDetailView,
-    # EventCreateView,
      MultiStepEventCreateView,
     CommentCreateView,
     CommentLikeToggleView,

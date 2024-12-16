@@ -16,35 +16,32 @@
     </div>
     <div class="members-list">
       {% for member_info in members_with_roles %}
-      <div
-        class="member {% if member_info.is_admin %}admin{% endif %}"
-        data-user-id="{{ member_info.user.id }}"
-      >
-        <img
-          src="{{ member_info.user.profile.profile_pic.url }}"
-          alt="{{ member_info.user.username }}"
-        />
+      <div class="member {% if member_info.is_admin %}admin{% endif %}" data-user-id="{{ member_info.user.id }}">
+        <img src="{{ member_info.user.profile.profile_pic.url }}" alt="{{ member_info.user.username }}" />
         <div class="member-info">
           <div class="member-name">
-            <a href="{% url 'chat_room' username=member_info.user.username %}">
-              {{ member_info.user.username }}
-            </a>
-          </div>          
+            {% if member_info.user.id != request.user.id %}
+          <a href="{% url 'chat_room' username=member_info.user.username %}">
+            {{ member_info.user.username }}
+          </a>
+        {% else %}
+          {{ member_info.user.username }}
+        {% endif %}
+          </div>
           <div class="member-likes">{{ member_info.post_likes }} likes</div>
         </div>
         <div class="member-role">
           {% if member_info.role == "Main Admin" %}
-          <span class="role-badge">Main Admin</span>
+            <span class="role-badge">Main Admin</span>
           {% elif member_info.is_admin %}
-          <span class="role-badge" style="background-color: #28a745"
-            >Forum Admin</span
-          >
+            <span class="role-badge" style="background-color: #28a745">Forum Admin</span>
           {% else %}
-          <span class="role-badge">Member</span>
+            <span class="role-badge">Member</span>
           {% endif %}
         </div>
       </div>
-      {% endfor %} {% if user.is_authenticated and membership %} 
+    {% endfor %}
+     {% if user.is_authenticated and membership %} 
       {% if left_members %}
       <div class="left-members">
         <h3>Users Who Left the Forum</h3>

@@ -64,14 +64,14 @@ class ForumListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        total_members = 0
+        total_members = set()  # Use a set to ensure unique members
         total_discussions = 0
         total_active_posts = 0
         total_posts = 0
 
         for forum in context["forums"]:
             forum.members_count = forum.members.count()
-            total_members += forum.members_count
+            total_members.update(forum.members.all())  # Add unique members to the set
             forum_post_count = forum.forums_posts.count()
             total_posts += forum_post_count
 
@@ -91,7 +91,7 @@ class ForumListView(ListView):
             )
             forum.forum_post_count = forum_post_count
 
-        context["total_members_display"] = self.format_count(total_members)
+        context["total_members_display"] = self.format_count(len(total_members))
         context["total_discussions_display"] = self.format_count(total_discussions)
         context["total_posts_display"] = self.format_count(total_posts)
         context["total_active_posts_display"] = self.format_count(total_active_posts)
@@ -102,6 +102,7 @@ class ForumListView(ListView):
         if count >= 1000:
             return f"{count // 1000}k"
         return str(count)
+
 
 
 class ForumDetailView(LoginRequiredMixin, DetailView):
@@ -420,6 +421,85 @@ class CreatePostView(View):
             request, "forums/create_post.html", {"post_form": form, "forum": forum}
         )
 
+def edit_post(request, forum_id, post_id):
+    forum = get_object_or_404(Forum, id=forum_id)
+    post = get_object_or_404(Post, id=post_id, forum=forum)
+    user = request.user
+
+    if post.user != user and not (ForumMembership.objects.filter(user=user, forum=forum, role='admin').exists()):
+        messages.error(request, 'You do not have permission to edit this post.')
+        return redirect('forums:forum_detail', pk=forum.id)
+
+    if request.method == 'POST':
+        form = PostForm(request.POST, request.FILES, instance=post)
+        if form.is_valid():
+            updated_post = form.save(commit=False)
+            updated_post.approved = False
+
+            if ForumMembership.objects.filter(user=user, forum=forum, role='admin').exists():
+                updated_post.approved = True
+
+            updated_post.save()
+            messages.success(request, 'Post updated successfully and is pending review.')
+            return redirect('forums:forum_detail', pk=forum.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+
+    else:
+        form = PostForm(instance=post)
+
+    if user.is_authenticated:
+        posts = forum.forums_posts.filter(approved=True).order_by("-created_at") | forum.forums_posts.filter(user=user).order_by("-created_at")
+    else:
+        posts = forum.forums_posts.filter(approved=True).order_by("-created_at")
+
+    post_count = posts.count()
+    all_forums = Forum.objects.annotate(post_count=Count("forums_posts")).order_by("-post_count")[:5]
+    forum_details = []
+    user_is_sub = ForumMembership.objects.filter(user=user, forum=forum).exists()
+
+    for f in all_forums:
+        is_member = ForumMembership.objects.filter(user=user, forum=f).exists()
+        is_admin = ForumMembership.objects.filter(user=user, forum=f).first()
+        is_admin = is_admin.role == "admin" if is_admin else False
+        is_main_admin = f.created_by == user
+        total_members = f.members.count()
+
+        forum_details.append(
+            {
+                "forum": f,
+                "total_members": total_members,
+                "user_is_member": is_member,
+                "user_is_admin": is_admin,
+                "user_is_main_admin": is_main_admin,
+                "is_current_forum": f == forum,
+            }
+        )
+
+    comments = (
+        Comment.objects.filter(post__forum=forum, post__approved=True)
+        .select_related("user", "post")
+        .prefetch_related("replies", "likecomment_set")
+    )
+
+    if user.is_authenticated:
+        comments = comments.filter(models.Q(post__approved=True) | models.Q(post__user=user))
+
+    comment_count = comments.count()
+
+    return render(
+        request,
+        'forums/edit_post.html',
+        {
+            'post_form': form,
+            'forum': forum,
+            'post': post,
+            'post_count': post_count,
+            'forum_details': forum_details,
+            'user_is_sub': user_is_sub,
+            'comment_count': comment_count,
+        }
+    )
 
 # View that handles deleting a specific post.
 class PostDeleteView(View):
@@ -427,19 +507,18 @@ class PostDeleteView(View):
         try:
             user = request.user
             post = get_object_or_404(Post, id=post_id)
+            forum = post.forum
 
             if user.is_authenticated:
-                posts = post.forum.forums_posts.filter(approved=True).order_by(
+                posts = forum.forums_posts.filter(approved=True).order_by(
                     "-created_at"
-                ) | post.forum.forums_posts.filter(user=user).order_by("-created_at")
+                ) | forum.forums_posts.filter(user=user).order_by("-created_at")
             else:
-                posts = post.forum.forums_posts.filter(approved=True).order_by(
-                    "-created_at"
-                )
+                posts = forum.forums_posts.filter(approved=True).order_by("-created_at")
 
-            if post.image:
+            if post.image and os.path.exists(post.image.path):
                 os.remove(post.image.path)
-            if post.video:
+            if post.video and os.path.exists(post.video.path):
                 os.remove(post.video.path)
 
             post.delete()
@@ -451,6 +530,7 @@ class PostDeleteView(View):
                     "status": "success",
                     "message": "Post deleted successfully",
                     "post_count": post_count,
+                    "forum_id": forum.id,
                 }
             )
 
@@ -629,6 +709,8 @@ def post_detail(request, forum_id, post_id):
 )
 
     posts = forum.forums_posts.all().order_by("-created_at")
+    user = request.user
+    post.liked = post.likes.filter(user=user).exists()
     user = request.user
     for forum_post in posts:
         forum_post.liked = forum_post.likes.filter(user=user).exists()
@@ -884,6 +966,7 @@ def drafts_page(request, forum_id):
             "forum_details": forum_details,
             "drafts_count": drafts_count,
             "left_members": left_members,
+            'request': request,
         },
     )
 
@@ -899,7 +982,7 @@ def post_draft(request, draft_id):
                 content=draft.content,
                 image=draft.image,
                 video=draft.video,
-                is_approved=True,
+                approved=True,
             )
             draft.is_posted = True
             draft.save()
@@ -1244,6 +1327,8 @@ def manage_forum(request, forum_id):
     forum = get_object_or_404(Forum, id=forum_id)
     user = request.user
     membership = ForumMembership.objects.filter(forum=forum, user=user).first()
+    left_members = LeftForumMembership.objects.filter(forum=forum)
+
     flagged_posts = PostFlag.objects.filter(post__forum=forum)
 
     one_week_ago = timezone.now() - timedelta(weeks=1)
@@ -1326,6 +1411,7 @@ def manage_forum(request, forum_id):
             "post_rules": post_rules,
             "comment_rules": comment_rules,
             "comment_count": comment_count,
+            "left_members": left_members,
         },
     )
 
@@ -1385,7 +1471,7 @@ def delete_post_rule(request, rule_id):
             }
         )
     except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=400)
+        logging.error("Error deleting comment rule: %s", str(e))
 
 
 @login_required
@@ -1401,7 +1487,7 @@ def delete_comment_rule(request, rule_id):
             }
         )
     except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=400)
+        logging.error("Error deleting post rule: %s", str(e))
 
 
 @login_required

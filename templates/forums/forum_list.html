@@ -23,7 +23,7 @@
           >
           <span
             ><i class="fas fa-clock"></i> {{ total_active_posts_display }}
-            Active</span
+            Active Discussions</span
           >
         </p>
       </div>
@@ -85,7 +85,13 @@
         </div>
       </div>
       <div class="forum-card-content">
-        <h2 class="forum-name" style="text-transform: uppercase;">{{ forum.name|truncatewords:20 }}</h2>
+        <h2 class="forum-name" style="text-transform: uppercase;">
+          {% if forum.name|length > 10 %}
+            {{ forum.name|slice:":10" }}...
+          {% else %}
+            {{ forum.name }}
+          {% endif %}
+        </h2>
         <p class="forum-description">
           {{ forum.description|truncatewords:20 }}
         </p>

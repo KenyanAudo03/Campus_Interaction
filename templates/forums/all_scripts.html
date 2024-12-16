@@ -1,4 +1,5 @@
 {% load static %}
+<!-- Like Comment -->
 <script>
   function toggleReplyForm(commentId) {
     const replyForm = document.getElementById(`reply-form-${commentId}`);
@@ -21,8 +22,10 @@
       .catch((error) => console.error("Error:", error));
   }
 </script>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="{% static 'js/forum/delete_share.js' %}"></script>
 <script src="{% static 'js/forum/viewing_images.js' %}"></script>
+<!-- Image Model -->
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const imageModal = document.getElementById("image-modal");
@@ -63,7 +66,6 @@
     });
   });
 </script>
-<!-- Subscribe and Leave -->
 <script>
   // SUBSCRIBE AND LEAVE JS
   const MembershipManager = {
@@ -1011,6 +1013,7 @@
     setupHighlightComment();
   });
 </script>
+<!-- Flag Post Model -->
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const flagPostModal = document.getElementById("flagPostModal");
@@ -1116,4 +1119,12 @@
       return cookieValue;
     }
   });
+  document.addEventListener("DOMContentLoaded", () => {
+  const flagPostModal = document.getElementById("flagPostModal");
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeFlagModal();
+    }
+  });
+});
 </script>

@@ -23,79 +23,54 @@
   <div style="margin-top: 5px">
     <div class="polls-container">
       <div class="polls_items">
-        <form
-          method="GET"
-          action="{% url 'polls:base_poll' %}"
-          class="search-form"
-        >
-          <input
-            type="text"
-            id="search"
-            name="query"
-            placeholder="Search polls..."
-            aria-label="Search polls"
-            value="{{ query }}"
-            autocomplete="off"
-          />
-          <button type="submit" class="search">Search</button>
-        </form>
+        {% if polls %}
+  <form
+    method="GET"
+    action="{% url 'polls:base_poll' %}"
+    class="search-form"
+  >
+    <input
+      type="text"
+      id="search"
+      name="query"
+      placeholder="Search polls..."
+      aria-label="Search polls"
+      value="{{ query }}"
+      autocomplete="off"
+    />
+    <button type="submit" class="search">Search</button>
+  </form>
 
-        <!-- Display message when no polls are found after a search -->
-        {% if no_polls_message %}
-        <p
-          class="no-polls-message"
-          style="
-            color: black;
-            text-align: center;
-            margin: 50px 0;
-            font-size: 24px;
-          "
-        >
-          {{ no_polls_message }}
-        </p>
-        {% elif polls %}
-        <!-- Display poll type filter buttons if polls are found -->
-        <div class="poll-type-buttons">
-          <button
-            class="poll-type-btn active"
-            data-type=""
-            onclick="filterPolls(this)"
-          >
-            All Types
-          </button>
-          <button
-            class="poll-type-btn"
-            data-type="question"
-            onclick="filterPolls(this)"
-          >
-            Question
-          </button>
-          <button
-            class="poll-type-btn"
-            data-type="opinion"
-            onclick="filterPolls(this)"
-          >
-            Opinion Poll
-          </button>
-        </div>
-        {% endif %}
-        <div
-          id="no-polls-message"
-          style="
-            display: none;
-            text-align: center;
-            margin: 60px 0;
-            font-size: 15px;
-            color: black;
-          "
-        >
-          <i
-            class="fas fa-poll"
-            aria-hidden="true"
-            style="color: #007bff; font-size: 30px; margin-bottom: 10px"
-          ></i>
-          <b>No polls available in this category.</b>
-        </div>
+  {% if no_polls_message %}
+    <p class="no-polls-message">{{ no_polls_message }}</p>
+  {% elif polls %}
+    <div class="poll-type-buttons">
+      <button
+        class="poll-type-btn active"
+        data-type=""
+        onclick="filterPolls(this)"
+      >
+        All Types
+      </button>
+      <button
+        class="poll-type-btn"
+        data-type="question"
+        onclick="filterPolls(this)"
+      >
+        Question
+      </button>
+      <button
+        class="poll-type-btn"
+        data-type="opinion"
+        onclick="filterPolls(this)"
+      >
+        Opinion Poll
+      </button>
+    </div>
+  {% endif %}
+{% else %}
+{% endif %}
+
 
         <!-- No polls message -->
         <ul class="poll-list" id="pollList">
@@ -311,9 +286,9 @@
           </li>
           {% endif %} {% endfor %} {% else %}
           <div
-            id="no-polls-message"
+            
             style="
-              display: none;
+              
               text-align: center;
               margin: 60px 0;
               font-size: 24px;

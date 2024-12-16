@@ -1,0 +1,39 @@
+{% extends 'base.html' %} {% block title %}{{ forum.name }} CampHub Maps 
+{% endblock %} {% block content %} {% load static %}
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="{% static 'css/maps/maps_styling.css' %}" />
+
+<div class="search-container" id="searchContainer">
+  <input
+    type="text"
+    id="search"
+    autocomplete="off"
+    placeholder="Search for a building..."
+  />
+  <button id="searchButton"><i class="fa-solid fa-magnifying-glass"></i></button>
+  <button id="closeSearch" class="close-btn">✖</button>
+
+  <div id="recent-suggestions" class="recent-suggestions-container">
+  </div>
+    
+</div>
+
+<button id="openSearch" class="hidden">Open Search</button>
+<main>
+  <section class="map-container">
+    <iframe
+      id="googleMap"
+      src="https://www.google.com/maps?q=Nairobi&output=embed"
+      frameborder="0"
+      allowfullscreen
+    >
+    </iframe>
+  </section>
+</main>
+
+<script src="{% static 'js/maps/searching_location.js' %}"></script>
+{% endblock %}

@@ -3,7 +3,6 @@ from events.models import Event
 from feeds.models import Post
 from polls.models import Poll
 from marketplace.models import Item
-from maps.models import Landmark
 from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone

@@ -1,63 +1,43 @@
-from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
-from .utility import is_malicious_url
-from django.contrib import messages
-from .models import Links, Files
-def check_url(url):
-    if not url:
-        return JsonResponse({'error': 'No URL provided'}, status=400)
-        
-    # Check if the URL is malicious
-    is_malicious = is_malicious_url(url)
-    if is_malicious:
-        return False
-    return True
+from django.shortcuts import render, redirect
+from .models import Resource
+from .forms import ResourceForm
 
-
-def resources(request):
-    links = Links.objects.all()
-    documents = Files.objects.all()
-
-    context = {
-        'links': links,
-        'documents': documents
-    }
+# View to list all resources
+def resource_list(request):
+    resources = Resource.objects.all()
     
-    return HttpResponse("Hi")
-    pass
+    # Process resources to add file type attributes for easier checking in the template
+    for resource in resources:
+        # Get file extension
+        file_extension = resource.file.name.split('.')[-1].lower()
+        resource.file_extension = file_extension
+        
+        # Add a boolean flag to check if the resource is an image
+        resource.is_image = file_extension in ['jpg', 'jpeg', 'png']
+        resource.is_pdf = file_extension == 'pdf'
+    
+    return render(request, 'resources/resource_list.html', {'resources': resources})
 
-
-def new_resource_link(request):
+# View to upload a resource
+def upload_resource(request):
     if request.method == 'POST':
-        link = request.POST['link']
-        course = request.POST['course']
-        name = request.POST['name']
+        form = ResourceForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('resources')  # Redirect to the resources list after successful upload
+    else:
+        form = ResourceForm()
+    return render(request, 'resources/upload_resource.html', {'form': form})
 
-        if check_url(link):
-            safelink = link
-
-        else:
-            return messages.error(request, 'Malicious Link Detected')
-
-        Links.object.create(
-            name=name,
-            link=safelink,
-            course=course
-        )
-    return HttpResponse("addlink")
-
-def new_resource_file(request):
-    if request.method == 'POST':
-        document = request.POST['document']
-        course = request.POST['course']
-        name = request.POST['name']
-        description = request.POST['description']
-
-        Files.object.create(
-            name=name,
-            document=document,
-            description=description,
-            course=course,
-        )    
-
-    return HttpResponse("addfile")
+# View to filter resources by category
+def resources_by_category(request, category):
+    resources = Resource.objects.filter(category=category)
+    
+    # Process resources to add file type attributes for easier checking in the template
+    for resource in resources:
+        file_extension = resource.file.name.split('.')[-1].lower()
+        resource.file_extension = file_extension
+        resource.is_image = file_extension in ['jpg', 'jpeg', 'png']
+        resource.is_pdf = file_extension == 'pdf'
+    
+    return render(request, 'resources/resource_list.html', {'resources': resources})

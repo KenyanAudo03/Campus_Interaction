@@ -304,7 +304,7 @@ ol {
 .header__menu ul li {
 	list-style: none;
 	display: inline-block;
-	margin-right: 40px;
+	margin-right: 5px;
 	position: relative;
   color: #ffffff;
 }

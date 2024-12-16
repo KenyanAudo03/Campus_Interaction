@@ -1,10 +1,24 @@
-/* event-detail.css */
-.alert {
-    animation: slideIn 0.3s ease-out;
+:root {
+    /* Color Palette */
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --accent-color: #e74c3c;
+    --text-dark: #2c3e50;
+    --background-light: #f4f6f7;
+    --transition-speed: 0.3s;
 }
+
+
+
+/* * Modern Typography */ */
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: var(--text-dark);
+    background-color: var(--background-light);
 }
+
+
 .bg-gradient-dark {
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
 }
@@ -106,19 +120,57 @@ body {
 }
 
 
-/* .comment-section, 
-.reply-section {
-    transition: max-height 0.4s ease-in-out;
+/* Comment Section Enhanced */
+.comment-section {
+    max-height: 500px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) transparent;
+}
+
+.comment-card {
+    border-radius: 15px;
+    margin-bottom: 15px;
+    transition: all var(--transition-speed) ease;
+}
+
+.comment-card:hover {
+    background-color: rgba(0,0,0,0.02);
+    transform: scale(1.01);
+}
+
+/* Responsive Improvements */
+@media (max-width: 768px) {
+    .event-hero {
+        height: 50vh;
+    }
+
+    .card {
+        margin-bottom: 15px;
+    }
+}
+
+
+/* Micro-interactions */
+.like-button {
+    transition: transform var(--transition-speed) ease;
+}
+
+.like-button:hover {
+    transform: scale(1.2);
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border-radius: 20px;
     overflow: hidden;
 }
 
-.comment-section .comment-card {
-    border-bottom: 1px solid #e9ecef;
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-} */
-
-
+/* Accessibility Improvements */
+.btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.5);
+}
 
 .fade-out {
     opacity: 0;
@@ -326,8 +378,8 @@ button i {
     transform: translateY(100%);
 }
 
-.event-hero:hover .event-overlay {
-    transform: translateY(0);
+.event-hero:hover {
+    transform: scale(1.02);
 }
 
 /* Text and Badge Styling */
@@ -335,6 +387,22 @@ button i {
     position: relative;
     z-index: 1;
 }
+
+.event-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom, 
+        rgba(0,0,0,0.1), 
+        rgba(0,0,0,0.7)
+    );
+    z-index: 1;
+}
+
 
 h1.display-4 {
     font-weight: 700;
@@ -372,9 +440,9 @@ h1.display-4 {
 /* General Card Styling */
 .card {
     background-color: #f9f9f9;
-    border: none;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transition: all var(--transition-speed) ease;
 }
 
 /* Header Styling */
@@ -382,6 +450,11 @@ h1.display-4 {
     /* font-weight: 600; */
     color: #333;
     font-weight: bold;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.1);
 }
 
 /* Comment Form */
@@ -583,18 +656,30 @@ textarea.form-control {
 .btn-primary:hover {
     background-color: #0056b3;
 }
-.btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+
+/* Button Modernization */
+.btn-primary, .btn-success, .btn-danger {
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    padding: 12px 24px;
+    transition: all var(--transition-speed) ease;
 }
 
-.btn-primary:hover {
-    background-color: #0b5ed7;
-    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-success {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-primary:hover, .btn-success:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 14px rgba(0,0,0,0.1);
 }
 
 .btn-secondary {
@@ -633,4 +718,30 @@ textarea.form-control {
 /* Section spacing */
 .card {
     border-radius: 10px;
+}
+
+/* Smooth Modal Transitions */
+.modal-transition {
+    transition: opacity 300ms ease-in-out;
+}
+
+.modal.modal-opening {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Enhanced Alert Transitions */
+.alert {
+    transition: opacity 200ms ease-in-out, 
+                transform 200ms ease-in-out;
 }

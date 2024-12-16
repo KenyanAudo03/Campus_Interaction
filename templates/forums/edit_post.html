@@ -1,0 +1,634 @@
+{% extends 'base.html' %} {% block title %}{{ forum.name }} - Create Topic 
+{% endblock %} {% block content %}{% load custom_filters %} {% load static %}
+<link rel="stylesheet" href="{% static 'css/forum/forum_detail.css' %}" />
+<link rel="stylesheet" href="{% static 'css/forum/add_topic.css' %}" />
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100..900&display=swap"
+  rel="stylesheet"
+/>
+<!-- Posting -->
+<script src="{% static 'js/forum/forum_details.js' %}"></script>
+
+
+{% if user_is_sub %}
+<div class="subscribe">
+  <div class="">
+    <div class="sub-message">
+      <div class="discussion-comments">
+        <p class="back-btn">
+          <a
+            href="{% url 'forums:forum_detail' forum.id %}"
+            class="forum-card-overlay"
+            ><i class="fa-solid fa-arrow-left"></i
+          ></a>
+        </p>
+        <p id="member-count">{{ forum.member_count }} <span>Members</span></p>
+        <p id="posts-count">{{ comment_count }} <span>Comments</span></p>
+        <p id="topics-count" class="topics-count">
+          {{ post_count }} <span>Topics</span>
+        </p>
+      </div>
+      <div class="search-container">
+        <div class="input-group">
+          <input
+            type="text"
+            autocomplete="off"
+            class="form-control"
+            id="forum-search-input"
+            placeholder="Search {{ forum.name }}"
+            data-forum-id="{{ forum.id }}"
+          />
+        </div>
+        <!-- This div will hold the search suggestions -->
+        <div id="search-suggestions" class="search-suggestions"></div>
+      </div>
+      <div class="subscribe-message" id="membership-controls"></div>
+    </div>
+  </div>
+</div>
+<!-- POST FORM -->
+<div class="post-container">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2 style="text-transform: uppercase">Popular Forums to Explore</h2>
+    </div>
+    <div class="member-list" style="border-top: 1px solid #ebeef0">
+      <a href="{% url 'forums:forum_create' %}">
+        <div class="member" style="border-bottom: 1px solid #ebeef0">
+          <div class="image-i">
+            <i class="fa-brands fa-forumbee"></i>
+          </div>
+          <div class="member-info">
+            <div class="member-name" style="text-transform: uppercase">
+              Create a New Forum
+            </div>
+            <div class="member-likes">create your own forum</div>
+          </div>
+          <div class="member-role">
+            <span class="role-badge" style="background-color: #57606a">
+              <i class="fa-solid fa-plus"></i>
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="members-list">
+      {% for forum_detail in forum_details %}
+      <a href="{% url 'forums:forum_detail' forum_detail.forum.id %}">
+        <div
+          class="member {% if forum_detail.is_current_forum %}highlighted-forum{% endif %}"
+          style="border-bottom: 1px solid #ebeef0"
+        >
+          {% if forum_detail.forum.display_picture %}
+          <img
+            src="{{ forum_detail.forum.display_picture.url }}"
+            alt="{{ forum_detail.user.username }}"
+          />
+          {% else %}
+          <div class="image-i">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          {% endif %}
+          <div class="member-info">
+            <div class="member-name" style="text-transform: uppercase">
+              {{ forum_detail.forum.name|slice:":18" }} 
+              {% if forum_detail.forum.name|length > 18 %}...{% endif %}
+            </div>
+            <div class="member-likes">
+              {{ forum_detail.total_members }} members, 
+              {{ forum_detail.forum.forums_posts.count }} posts
+            </div>
+          </div>
+          <div class="member-role">
+            {% if forum_detail.user_is_main_admin %}
+            <span class="role-badge" style="background-color: #007bff">
+              <i class="fas fa-crown"></i>
+            </span>
+            {% elif forum_detail.user_is_admin %}
+            <span class="role-badge" style="background-color: #28a745">
+              <i class="fas fa-user-shield"></i>
+            </span>
+            {% elif forum_detail.user_is_member %}
+            <span class="role-badge" style="background-color: #17a2b8">
+              <i class="fas fa-user"></i>
+            </span>
+            {% else %}
+            <span class="role-badge" style="background-color: #c0111a">
+              <i class="fas fa-ban"></i>
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %} {% if forum_details|length > 5 %}
+      <div class="view-more-button">
+        <a href="{% url 'forums:forum_list' %}" class="btn btn-primary"
+          >View More Forums</a
+        >
+      </div>
+      {% endif %}
+    </div>
+  </aside>
+
+  <style>
+  .create__options a[style*="pointer-events: none"] {
+  color: #b0b0b0;
+  cursor: not-allowed; 
+  text-decoration: none;
+}
+  </style>
+
+  <div class="main-content">
+    <div class="topic__header">
+        <div class="create__topic">
+            <h3>Edit Topic</h3>
+        </div>
+        <div class="drafts">
+            <a href="{% url 'forums:drafts_page' forum_id=forum.id %}">Drafts</a>
+        </div>
+    </div>
+    <div class="sections">
+        <div class="create__options">
+            <a href="" id="create-text">Text</a>
+            <a href="" id="create-image-video">Image & Video</a>
+            <a href="{% url 'polls:add_polls' %}" id="create-poll" target="_blank">Poll</a>
+        </div>
+    </div>
+    <div class="post__form" data-forum-id="{{ forum.id }}" data-post-id="{{ post.id }}">
+        <form method="POST" enctype="multipart/form-data" id="post-form" class="p-2">
+            {% csrf_token %}
+            <div class="form-group mb-3" id="title-field">
+                {{ post_form.title }}
+                <div id="char-count" class="char-count">0/200</div>
+            </div>
+            <div id="text-post-fields" style="display: none">
+                <div class="form-group mb-3">{{ post_form.content }}</div>
+            </div>
+            <div id="image-video-post-fields" style="display: none">
+              <div class="drag-and-drop-area" id="drag-and-drop-area">
+                <p>
+                  Drag and drop or Upload Media <i class="fa-solid fa-upload"></i>
+                </p>
+                <input
+                  type="file"
+                  id="hidden-file-input"
+                  accept="image/*,video/*"
+                  style="display: none"
+                />
+              </div>
+              <div class="preview-container" id="preview-container"></div>
+              <!-- Hidden inputs for form submission -->
+              <div class="form-group image-field" style="display: none">
+                {{ post_form.image }}
+              </div>
+              <div class="form-group video-field" style="display: none">
+                {{ post_form.video }}
+              </div>
+            </div>
+            
+          
+            <div id="form-errors" class="form-errors" style="display: none"></div>
+            <div id="submit-button-div" style="display: none">
+                <button type="submit" id="publish-btn">Post</button>
+            </div>
+        </form>
+    </div>
+</div>
+  <div class="members">
+  </div>
+</div>
+
+{% else %}
+<div class="subscribe-modal">
+  <div class="subscribe-error">
+    <div class="modal-header">
+      <i class="fas fa-exclamation-triangle modal-icon"></i>
+      <h4 class="modal-title">Access Restricted</h4>
+    </div>
+    <p class="modal-description">
+      You must subscribe to this forum to create a post or interact with it.
+      Click the button below to subscribe and unlock full access.
+    </p>
+    <a href="{% url 'forums:forum_detail' forum.id %}">
+      <button class="subscribe-button">Subscribe Now</button>
+    </a>
+    <br />
+    <a href="{% url 'forums:forum_list' %}">
+      <button class="modal-cancel-button">Cancel</button>
+    </a>
+  </div>
+</div>
+
+{% endif %} 
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const createOptions = document.querySelectorAll('.create__options a');
+      const titleField = document.getElementById('title-field');
+      const textPostFields = document.getElementById('text-post-fields');
+      const imageVideoPostFields = document.getElementById('image-video-post-fields');
+      const submitButtonDiv = document.getElementById('submit-button-div');
+      const postForm = document.getElementById('post-form');
+      const postContent = "{{ post.content }}";
+      const postImage = "{{ post.image }}";
+      const postVideo = "{{ post.video }}";
+
+      let errorTimeout;
+
+      function hideAllFields() {
+          titleField.style.display = 'none';
+          textPostFields.style.display = 'none';
+          imageVideoPostFields.style.display = 'none';
+          submitButtonDiv.style.display = 'none';
+
+          createOptions.forEach(option => {
+              option.classList.remove('active');
+              option.removeAttribute('href');
+              option.style.pointerEvents = 'none';
+          });
+      }
+
+      function showTextPost(e) {
+          e.preventDefault();
+          hideAllFields();
+          createOptions[0].classList.add('active');
+          createOptions[0].style.pointerEvents = 'auto';
+          titleField.style.display = 'block';
+          textPostFields.style.display = 'block';
+          submitButtonDiv.style.display = 'block';
+      }
+
+      function showImageVideoPost(e) {
+          e.preventDefault();
+          hideAllFields();
+          createOptions[1].classList.add('active');
+          createOptions[1].style.pointerEvents = 'auto';
+          titleField.style.display = 'block';
+          imageVideoPostFields.style.display = 'block';
+          submitButtonDiv.style.display = 'block';
+      }
+
+      function showPollPost(e) {
+          hideAllFields();
+          createOptions[0].classList.add('active');
+          titleField.style.display = 'block';
+          textPostFields.style.display = 'block';
+          submitButtonDiv.style.display = 'block';
+      }
+
+      createOptions[0].addEventListener('click', showTextPost);
+      createOptions[1].addEventListener('click', showImageVideoPost);
+      createOptions[2].addEventListener('click', showPollPost);
+
+      if (postContent) {
+          showTextPost({ preventDefault: () => {}, target: createOptions[0] });
+      } else if (postImage || postVideo) {
+          showImageVideoPost({ preventDefault: () => {}, target: createOptions[1] });
+      } else {
+          createOptions[0].style.pointerEvents = 'none';
+          createOptions[1].style.pointerEvents = 'none';
+      }
+
+      function displayError(message) {
+          const formErrorsDiv = document.createElement('div');
+          formErrorsDiv.className = 'form-errors';
+          formErrorsDiv.style.position = 'fixed';
+          formErrorsDiv.style.bottom = '20px';
+          formErrorsDiv.style.left = '50%';
+          formErrorsDiv.style.transform = 'translateX(-50%)';
+          formErrorsDiv.style.backgroundColor = '#ff3b30';
+          formErrorsDiv.style.color = 'white';
+          formErrorsDiv.style.padding = '12px 20px';
+          formErrorsDiv.style.borderRadius = '7px';
+          formErrorsDiv.style.fontSize = '16px';
+          formErrorsDiv.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+          formErrorsDiv.style.zIndex = '9999';
+          formErrorsDiv.innerHTML = message;
+          document.body.appendChild(formErrorsDiv);
+
+          if (errorTimeout) {
+              clearTimeout(errorTimeout);
+          }
+
+          errorTimeout = setTimeout(() => {
+              formErrorsDiv.style.display = 'none';
+          }, 5000);
+      }
+
+      postForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const title = postForm.querySelector('input[name="title"]');
+          const content = postForm.querySelector('textarea[name="content"]');
+          const image = postForm.querySelector('input[name="image"]');
+          const video = postForm.querySelector('input[name="video"]');
+          const forumId = document.querySelector('[data-forum-id]').getAttribute('data-forum-id');
+          const submitButton = postForm.querySelector('button[type="submit"]');
+
+          if (!title.value.trim()) {
+              displayError('Title is required.');
+              return;
+          }
+
+          if (createOptions[0].classList.contains('active') && !content.value.trim()) {
+              displayError('Content is required for text posts.');
+              return;
+          }
+
+          if (createOptions[1].classList.contains('active') && !(image.files.length || video.files.length)) {
+              displayError('Image or Video is required for image/video posts.');
+              return;
+          }
+
+          submitButton.disabled = true;
+          submitButton.textContent = 'Updating...';
+
+          const formData = new FormData(postForm);
+          const postId = document.querySelector('[data-post-id]').getAttribute('data-post-id');
+
+          fetch('', {
+              method: 'POST',
+              body: formData,
+              headers: {
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+              }
+          })
+          .then(response => {
+              if (!response.ok) {
+                  return response.text().then(text => {
+                      throw new Error(text);
+                  });
+              }
+              return response.text();
+          })
+          .then(result => {
+              window.location.href = `/forums/forum/${forumId}/post/${postId}/`;
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              displayError('An error occurred while updating the post. Please try again.');
+
+              submitButton.disabled = false;
+              submitButton.textContent = 'Post';
+          });
+      });
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const dragDropArea = document.getElementById("drag-and-drop-area");
+    const hiddenFileInput = document.getElementById("hidden-file-input");
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    let currentFile = null;
+
+    const existingImageUrl = "{% if post.image %}{{ post.image.url }}{% else %}''{% endif %}";
+    const existingVideoUrl = "{% if post.video %}{{ post.video.url }}{% else %}null{% endif %}";
+
+    dragDropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dragDropArea.classList.add("drag-over");
+    });
+
+    dragDropArea.addEventListener("dragleave", () => {
+      dragDropArea.classList.remove("drag-over");
+    });
+
+    dragDropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dragDropArea.classList.remove("drag-over");
+      const files = e.dataTransfer.files;
+      handleFileSelection(files[0]);
+    });
+
+    const uploadIcon = dragDropArea.querySelector(".fa-upload");
+    uploadIcon.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!currentFile) {
+        hiddenFileInput.click();
+      }
+    });
+
+    hiddenFileInput.addEventListener("change", () => {
+      const files = hiddenFileInput.files;
+      handleFileSelection(files[0]);
+    });
+
+    function handleFileSelection(file) {
+      if (!file) return;
+
+      const fileType = file.type.split("/")[0];
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      if (ext === "webm") {
+        showErrorMessage("WebM files are not supported. Please upload a different format.");
+        return;
+      }
+
+      if (fileType !== "image" && fileType !== "video") {
+        showErrorMessage("Please upload an image or video file.");
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        showErrorMessage("File size should not exceed 10MB.");
+        return;
+      }
+
+      currentFile = file;
+
+      dragDropArea.classList.add("preview-mode");
+      dragDropArea.innerHTML = "";
+
+      const previewItem = document.createElement("div");
+      previewItem.classList.add("preview-item");
+
+      const progressContainer = document.createElement("div");
+      progressContainer.classList.add("upload-progress");
+      progressContainer.style.display = "none";
+
+      const progressBar = document.createElement("div");
+      progressBar.classList.add("progress-bar");
+      progressBar.style.width = "0%";
+      progressBar.style.height = "4px";
+      progressBar.style.backgroundColor = "#1e88e5";
+      progressBar.style.transition = "width 0.5s ease";
+
+      progressContainer.appendChild(progressBar);
+      previewItem.appendChild(progressContainer);
+
+      if (fileType === "image") {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.classList.add("preview-media");
+        previewItem.appendChild(img);
+      } else if (fileType === "video") {
+        const video = document.createElement("video");
+        video.src = URL.createObjectURL(file);
+        video.classList.add("preview-media");
+        video.controls = true;
+        video.loop = true;
+        previewItem.appendChild(video);
+      }
+
+      const removeBtn = document.createElement("button");
+      removeBtn.classList.add("remove-btn");
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.onclick = () => {
+        removePreview();
+      };
+
+      previewItem.appendChild(removeBtn);
+      dragDropArea.appendChild(previewItem);
+
+      simulateUploadProgress(progressContainer, progressBar);
+
+      const imageInput = document.querySelector("input[name='image']");
+      const videoInput = document.querySelector("input[name='video']");
+      if (fileType === "image") {
+        imageInput.files = createFileList(file);
+        videoInput.value = "";
+      } else if (fileType === "video") {
+        videoInput.files = createFileList(file);
+        imageInput.value = "";
+      }
+    }
+
+    function simulateUploadProgress(progressContainer, progressBar) {
+      progressContainer.style.display = "block";
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        progressBar.style.width = `${Math.min(progress, 100)}%`;
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            progressContainer.style.display = "none";
+          }, 500);
+        }
+      }, 500);
+    }
+
+    function removePreview() {
+      currentFile = null;
+      dragDropArea.classList.remove("preview-mode");
+      dragDropArea.innerHTML = `
+        <p>Drag and drop or Upload Media <i class="fa-solid fa-upload"></i></p>
+        <input type="file" id="hidden-file-input" accept="image/*,video/*" style="display: none;" />
+      `;
+
+      const uploadIcon = dragDropArea.querySelector(".fa-upload");
+      uploadIcon.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!currentFile) {
+          hiddenFileInput.click();
+        }
+      });
+    }
+
+    function createFileList(file) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      return dataTransfer.files;
+    }
+
+    function showErrorMessage(message) {
+      const errorMessage = document.createElement("div");
+      errorMessage.classList.add("error-message");
+      errorMessage.textContent = message;
+
+      document.body.appendChild(errorMessage);
+
+      setTimeout(() => {
+        errorMessage.remove();
+      }, 4000);
+    }
+
+    if (existingImageUrl && existingImageUrl !== "''") {
+      const img = document.createElement("img");
+      img.src = existingImageUrl;
+      img.classList.add("preview-media");
+
+      img.style.width = "100%";
+      img.style.height = "auto";
+      img.style.maxHeight = "100%";
+      img.style.borderRadius = "6px";
+
+      const previewItem = document.createElement("div");
+      previewItem.classList.add("preview-item");
+
+      previewItem.appendChild(img);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.classList.add("remove-btn");
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.onclick = () => {
+        removePreview();
+      };
+
+      previewItem.appendChild(removeBtn);
+      dragDropArea.innerHTML = "";
+      dragDropArea.classList.add("preview-mode");
+      dragDropArea.appendChild(previewItem);
+    } else if (existingVideoUrl && existingVideoUrl !== "null") {
+      const video = document.createElement("video");
+      video.src = existingVideoUrl;
+      video.classList.add("preview-media");
+      video.controls = true;
+      video.loop = true;
+      const previewItem = document.createElement("div");
+      previewItem.classList.add("preview-item");
+      video.style.width = "100%";
+      video.style.height = "auto";
+      video.style.maxHeight = "100%";
+      video.style.borderRadius = "6px";
+      previewItem.appendChild(video);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.classList.add("remove-btn");
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.onclick = () => {
+        removePreview();
+      };
+
+      previewItem.appendChild(removeBtn);
+      dragDropArea.innerHTML = "";
+      dragDropArea.classList.add("preview-mode");
+      dragDropArea.appendChild(previewItem);
+    }
+  });
+</script>
+<script>
+  const titleInput = document.getElementById("topic__title");
+  const charCountDiv = document.getElementById("char-count");
+
+  function updateCharCount() {
+    const currentLength = titleInput.value.length;
+    charCountDiv.textContent = `${currentLength}/200`;
+  }
+
+  updateCharCount();
+
+  titleInput.addEventListener("input", updateCharCount);
+
+  const textarea = document.getElementById("topic__content");
+
+  function initializeTextarea() {
+    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+    const padding =
+      parseFloat(getComputedStyle(textarea).paddingTop) +
+      parseFloat(getComputedStyle(textarea).paddingBottom);
+    textarea.style.height = `${lineHeight * 6 + padding}px`;
+  }
+
+  function resizeTextarea() {
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  initializeTextarea();
+  textarea.addEventListener("input", resizeTextarea);
+</script>
+{% endblock %}

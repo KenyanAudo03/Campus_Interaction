@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campus Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Campus Locator</h1>
+  </div>
+  
+  <div class="main-container">
+    <div class="controls-container">
+      <div class="search-container">
+        <input type="text" id="search" placeholder="Search locations...">
+        <button id="searchButton">Search</button>
+      </div>
+
+      <div class="dropdowns-container">
+        <div class="dropdown">
+          <button class="dropbtn academic">Academic</button>
+          <div class="dropdown-content">
+            <ul>
+              <li><a href="#">Lecture Hall A</a></li>
+              <li><a href="#">Library</a></li>
+              <li><a href="#">Laboratory</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="dropbtn recreational">Recreational</button>
+          <div class="dropdown-content">
+            <ul>
+              <li><a href="#">Campus Park</a></li>
+              <li><a href="#">Gym</a></li>
+              <li><a href="#">Sports Arena</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="dropbtn services">Services</button>
+          <div class="dropdown-content">
+            <ul>
+              <li><a href="#">Cafeteria</a></li>
+              <li><a href="#">Health Center</a></li>
+              <li><a href="#">Administration Office</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <select id="universitySelector">
+        <option value="-1.2921,36.8219">University of Nairobi</option>
+        <option value="-0.3977,37.9054">Kenyatta University</option>
+        <option value="-0.5155,37.2666">Moi University</option>
+      </select>
+      
+      <div class="recent-searches" id="recentSearches">
+        <!-- Recent searches will be dynamically added here -->
+      </div>
+    </div>
+
+    <div class="map-container">
+      <iframe id="googleMap" src="" allowfullscreen></iframe>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>&copy; 2024 Campus Locator. All Rights Reserved.</p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

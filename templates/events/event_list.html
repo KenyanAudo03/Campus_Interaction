@@ -114,6 +114,139 @@
         width: 3rem;
         height: 3rem;
     }
+
+    :root {
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --text-color: #333;
+        --background-color: #f4f6f9;
+    }
+
+    body {
+        background-color: var(--background-color);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .filters-container {
+        background-color: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+    
+    .event-card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-gap: 2rem;
+      }
+    .event-status-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10;
+        padding: 5px 10px;
+        border-radius: 1.5rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .event-card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      
+    .status-upcoming { 
+        background-color: #28a745;
+        color: white;
+    }
+
+    .status-ongoing { 
+        background-color: #ffc107;
+        color: black;
+    }
+
+    .status-completed { 
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .event-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        width:100%;
+        
+    }
+
+    .event-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .event-card-image {
+        height: 500px;
+        object-fit: cover;
+        width: 100%;
+        transition: transform 0.3s ease;
+    }
+
+    .event-card:hover .event-card-image {
+        transform: scale(1.05);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .event-details-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        transition: background-color 0.2s ease;
+    }
+
+    .event-details-btn:hover {
+        background-color: #2980b9;
+    }
+
+    @media (max-width: 768px) {
+        .event-card-image {
+            height: 200px;
+        }
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .empty-state {
+        background-color: white;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+      
+      .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background-color: #2980b9;
+      }
 </style>
 {% endblock %}
 
@@ -136,3 +269,5 @@
 </script>
 {% endblock %}
 {% endblock %}
+
+

@@ -6,11 +6,12 @@
 
 
 {% block content %}
-<div class="container-fluid px-0 ">
-    <!-- Hero Section with Event Image -->
+<div class="container-fluid px-0">
+    <!-- Hero Section -->
     <div class="position-relative parent">
         {% if event.image %}
-            <div class="event-hero overflow: hidden;">
+            <!-- Display Image -->
+            <div class="event-hero overflow-hidden">
                 <img src="{{ event.image.url }}" alt="{{ event.title }}" class="event-image">
                 <div class="position-absolute bottom-0 start-0 w-100 bg-gradient-dark p-4">
                     <div class="container">
@@ -26,20 +27,27 @@
                 </div>
             </div>
         {% else %}
+            <!-- No Image: Display Event Content -->
             <div class="bg-primary text-white py-5">
                 <div class="container">
-                    <h1 class="display-4 mb-2">{{ event.title }}</h1>
-                    <div class="d-flex align-items-center">
+                    <h1 class="display-4 mb-4">{{ event.title }}</h1>
+                    <div class="d-flex align-items-center mb-4">
                         <i class="fas fa-calendar-alt me-2"></i>
                         <span>{{ event.start_date|date:"F d, Y" }} - {{ event.end_date|date:"F d, Y" }}</span>
                         <i class="fas fa-map-marker-alt ms-4 me-2"></i>
                         <span>{{ event.location }}</span>
                         <span class="badge bg-{{ event.status|lower }} ms-4">{{ event.status }}</span>
                     </div>
+                    <div class="mt-4 p-4 bg-light text-dark rounded">
+                        <h4 class="mb-3">Event Content</h4>
+                        <p class="mb-0">{{ event.content }}</p>
+                    </div>
                 </div>
             </div>
         {% endif %}
     </div>
+</div>
+
 
     <!-- Main Content -->
     <div class="container my-5">
@@ -59,6 +67,7 @@
                         {% endif %}
                     </div>
                 </div>
+               
 
                 <!-- Comments Section -->
                 <div class="card shadow-sm">

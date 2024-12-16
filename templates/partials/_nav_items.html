@@ -11,6 +11,7 @@
 </li>
 
 <!--=============== RESOURCES  ===============-->
+
 <li>
   <a href="{% url 'resources' %}" class="nav__link {% if request.path == resources_url %}active{% endif %}">Resources</a>
 </li>
@@ -48,6 +49,11 @@
 <li>
   {% url 'marketplace:item_list' as item_list_url %}
   <a href="{{ item_list_url }}" class="nav__link {% if 'marketplace' in request.resolver_match.namespace %}active{% endif %}">Marketplace</a>
+</li>
+<!--=============== MAPS ===============-->
+<li>
+  {% url 'maps:maps' as maps_links %}
+  <a href="{{ maps_links }}" class="nav__link {% if 'maps' in request.resolver_match.namespace %}active{% endif %}">Maps</a>
 </li>
 
 <!--=============== PROFILE ===============-->
