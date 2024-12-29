@@ -3,87 +3,75 @@
 
 {% load static %}
 
-
-
 {% block content %}
-
 <main>
 <section id="portfolio" class="portfolio section">
-
   <div class="container">
-
-
-        <div class="row gy-4   resources-row " data-aos="fade-up" data-aos-delay="200">
-
-
-          {% for link in  links %}
-          <div class="col-lg-5 portfolio-item  ms-1 me-2 resources-section  shadow-lg" data-aos="fade-up" data-aos-delay="200">
-            <div class="resouces-data">
-              <h3 class="text-center">{{link.name}}</h3>
-              <h4>{{link.course}}</h4>
-              <div class="stars">
-                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-              </div>
-              <p>
-                <i class="bi bi-quote quote-icon-left"></i>
-                Course: 
-               <a href="{{link.link}}" class="resources-link">{{link.link}}</a>
-                <i class="bi bi-quote quote-icon-right"></i>
-              </p>
-            </div>
-          </div><!-- End testimonial item -->
-          {% endfor %}
-
-
-
-          {% for document in  documents %}
-           <div class="col-lg-5 resources-section shadow-lg" data-aos="fade-up" data-aos-delay="200">
-            <div class="resouces-data">
-              <h3 class="text-center">Course document</h3>
-              <h4>Course : {{document.course}}</h4>
-              <h5>Name : {{document.name}}</h5>
-              <div class="stars">
-                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-              </div>
-              <p>
-                <i class="bi bi-quote quote-icon-left"></i>
-                <span>{{document.description}}</span>
-                <i class="bi bi-quote quote-icon-right"></i>
-              </p>
-              <button type="button" class="btn btn-primary text-center resources-button">Currently enrolled</button>
-            </div>
-          </div><!-- End testimonial item -->
-          {% empty %}
-          
-          <div class="col-lg-5 resources-section shadow-lg" data-aos="fade-up" data-aos-delay="200">
-            <div class="resouces-data">
-              <h3 class="text-center">Course enrolment info</h3>
-              <h4>You have not yet applied to our courses</h4>
-              <div class="stars">
-                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-              </div>
-              <p>
-                <i class="bi bi-quote quote-icon-left"></i>
-                <span>Find the course of your interest and start your learning now!</span>
-                <a href="/">
-                <i class="bi bi-quote quote-icon-right"></i>
-              </p>
-            </div>
-          </div><!-- End testimonial item -->
-
-          {% endfor %}
-          
-          
-        
-
-
+    <div class="row gy-4 resources-row" data-aos="fade-up" data-aos-delay="200">
+      
+      <!-- Display resource links -->
+      {% for link in links %}
+      <div class="col-lg-5 portfolio-item ms-1 me-2 resources-section shadow-lg" data-aos="fade-up" data-aos-delay="200">
+        <div class="resources-data">
+          <h3 class="text-center">{{ link.name }}</h3>
+          <h4>{{ link.course }}</h4>
+          <div class="stars">
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i>
+          </div>
+          <p>
+            <i class="bi bi-quote quote-icon-left"></i>
+            Course: <a href="{{ link.link }}" class="resources-link">{{ link.link }}</a>
+            <i class="bi bi-quote quote-icon-right"></i>
+          </p>
         </div>
       </div>
+      {% endfor %}
+
+      <!-- Display course documents -->
+      {% for document in documents %}
+      <div class="col-lg-5 resources-section shadow-lg" data-aos="fade-up" data-aos-delay="200">
+        <div class="resources-data">
+          <h3 class="text-center">Course Document</h3>
+          <h4>Course: {{ document.course }}</h4>
+          <h5>Name: {{ document.name }}</h5>
+          <div class="stars">
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i>
+          </div>
+          <p>
+            <i class="bi bi-quote quote-icon-left"></i>
+            <span>{{ document.description }}</span>
+            <i class="bi bi-quote quote-icon-right"></i>
+          </p>
+          <button type="button" class="btn btn-primary text-center resources-button">Currently Enrolled</button>
+        </div>
+      </div>
+      {% empty %}
+      <!-- Fallback when no documents are available -->
+      <div class="col-lg-5 resources-section shadow-lg" data-aos="fade-up" data-aos-delay="200">
+        <div class="resources-data">
+          <h3 class="text-center">Course Enrollment Info</h3>
+          <h4>You have not yet applied to our courses</h4>
+          <div class="stars">
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i>
+          </div>
+          <p>
+            <i class="bi bi-quote quote-icon-left"></i>
+            <span>Find the course of your interest and start your learning now!</span>
+            <a href="/">
+            <i class="bi bi-quote quote-icon-right"></i>
+          </p>
+        </div>
+      </div>
+      {% endfor %}
+
     </div>
-  </section>
-
-
-        </main>
-
-
-{% endblock  %}
+  </div>
+</section>
+</main>
+{% endblock %}

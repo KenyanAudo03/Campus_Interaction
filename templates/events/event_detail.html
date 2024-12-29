@@ -112,6 +112,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         {% include 'events/modals/registration_modal.html' %}
+
                         
 {# Update this section in your event_detail.html where the registration button is #}
 <div class="card shadow-sm mb-4">
@@ -142,6 +143,17 @@
         </div>
     </div>
 </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body text-center">
+        <a href="{{ google_calendar_link }}" 
+           target="_blank" 
+           class="btn btn-outline-primary w-100" 
+           id="googleCalendarBtn">
+            <i class="fas fa-calendar-plus me-2"></i> Add to Google Calendar
+        </a>
+    </div>
 </div>
 
              <!-- Edit Event Button -->
@@ -189,67 +201,54 @@
 
  
 {# Update this section in your event_detail.html where the registration button is #}
-<div class="card shadow-sm mb-3">
-<div class="card-body">
-<div id="registration-status-container">
-{% if not user_registered %}
-    {% if event.spots_left > 0 or not event.max_participants %}
-        <button type="button" 
-                class="btn btn-success btn-lg w-100" 
-                data-bs-toggle="modal" 
-                data-bs-target="#registrationModal"
-                id="registerButton">
-            <i class="fas fa-user-plus"></i> Register for Event
-        </button>
-    {% else %}
-        <button type="button" 
-                class="btn btn-warning btn-lg w-100" 
-                data-bs-toggle="modal" 
-                data-bs-target="#registrationModal"
-                id="registerButton">
-            <i class="fas fa-user-plus"></i> Join Waiting List
-        </button>
-    {% endif %}
-{% else %}
-    <div class="alert alert-success mb-3">
-        <i class="fas fa-check-circle"></i> 
-        {% if registration.status == 'registered' %}
-            You're registered!
-        {% else %}
-            You're on the waiting list (Position: {{ registration.waitlist_position }})
-        {% endif %}
-    </div>
-    <button type="button" 
-            class="btn btn-danger btn-lg w-100" 
-            id="cancelRegistrationBtn"
-            data-event-id="{{ event.id }}">
-        <i class="fas fa-times"></i> Cancel Registration
-    </button>
-{% endif %}
-</div>
-
-<div id="event-status" class="mt-3">
-{% if event.max_participants %}
-    <div class="d-flex justify-content-between align-items-center">
-        <span>Available Spots:</span>
-        <span id="spots-counter" class="badge bg-primary">
-            {{ event.spots_left }}
-        </span>
-    </div>
-    {% if event.waitlist_count > 0 %}
-        <div class="d-flex justify-content-between align-items-center mt-2">
-            <span>Waitlist:</span>
-            <span id="waitlist-counter" class="badge bg-secondary">
-                {{ event.waitlist_count }} people
-            </span>
+ <!-- Registration Button -->
+ <div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div id="registration-status-container">
+            {% if not user_registered %}
+                {% if event.spots_left > 0 or not event.max_participants %}
+                    <button type="button" class="btn btn-success btn-lg w-100" data-bs-toggle="modal" data-bs-target="#registrationModal" id="registerButton">
+                        <i class="fas fa-user-plus"></i> Register for Event
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-warning btn-lg w-100" data-bs-toggle="modal" data-bs-target="#registrationModal" id="registerButton">
+                        <i class="fas fa-user-plus"></i> Join Waiting List
+                    </button>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-success mb-3">
+                    <i class="fas fa-check-circle"></i>
+                    {% if registration.status == 'registered' %}
+                        You're registered!
+                    {% else %}
+                        You're on the waiting list (Position: {{ registration.waitlist_position }})
+                    {% endif %}
+                </div>
+                <button type="button" class="btn btn-danger btn-lg w-100" id="cancelRegistrationBtn" data-event-id="{{ event.id }}">
+                    <i class="fas fa-times"></i> Cancel Registration
+                </button>
+            {% endif %}
         </div>
-    {% endif %}
-{% endif %}
-</div>
-</div>
-</div>
 
-
+        <div id="event-status" class="mt-3">
+            {% if event.max_participants %}
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Available Spots:</span>
+                    <span id="spots-counter" class="badge bg-primary">{{ event.spots_left }}</span>
+                </div>
+                {% if event.waitlist_count > 0 %}
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span>Waitlist:</span>
+                        <span id="waitlist-counter" class="badge bg-secondary">{{ event.waitlist_count }} people</span>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+</div>
+</div>
     
 <!-- Edit Event Modal -->
 <div class="modal fade" id="editEventModal" tabindex="-1" aria-labelledby="editEventModalLabel" aria-hidden="true">

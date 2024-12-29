@@ -1,5 +1,5 @@
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Centralized configuration
     const config = {
         selectors: {
             eventContainer: '#event-container',
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelRegistrationBtn: '#cancelRegistrationBtn'
         },
         urls: {
-            base: '/events', // Base events URL
+            base: '/events',
             register: (eventId) => `/events/event/${eventId}/register/`,
             cancel: (eventId) => `/events/event/${eventId}/cancel/`,
             status: (eventId) => `/events/api/event/${eventId}/status/`,
@@ -20,11 +20,10 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         retryConfig: {
             maxRetries: 3,
-            baseDelay: 1000 // Base delay in milliseconds
+            baseDelay: 1000
         }
     };
 
-    // Utility Functions
     const utils = {
         getElement: (selector) => document.querySelector(selector),
         getElements: (selector) => document.querySelectorAll(selector),
@@ -231,56 +230,77 @@ document.addEventListener('DOMContentLoaded', function() {
             const registerButton = utils.getElement(config.selectors.registerButton);
             if (!registerButton) return;
         
-            // Destructure event details with default values
-            const {
-                max_participants = null, 
-                spots_left = 0, 
+             // Destructure event details with comprehensive defaults
+             const {
+                max_participants = null,
+                spots_left = 0,
                 userStatus = { 
                     is_registered: false, 
                     status: null 
                 },
                 event_start_date = null,
-                registration_open = true
-            } = event;
+                registration_open = true,
+                is_waitlist_open = true,
+                waitlist_count = 0
+            } = eventData;
         
-            // Button configuration object for different scenarios
+            // Comprehensive button states configuration
             const buttonStates = {
                 // Registered states
                 registered: {
                     class: 'btn-danger',
                     icon: 'times',
-                    text: 'Cancel Registration'
+                    text: 'Cancel Registration',
+                    modal: false,
+                    action: 'cancel'
                 },
                 waitlist: {
                     class: 'btn-warning',
                     icon: 'clock',
-                    text: 'On Waiting List'
+                    text: `On Waiting List (Position: ${userStatus.waitlist_position || 'N/A'})`,
+                    modal: false,
+                    action: 'cancel'
                 },
                 
                 // Available states
                 available: {
                     class: 'btn-success',
                     icon: 'user-plus',
-                    text: 'Register for Event'
+                    text: 'Register for Event',
+                    modal: true,
+                    action: 'register'
                 },
                 
                 // Full event states
-                full: {
+                full_waitlist: {
                     class: 'btn-warning',
-                    icon: 'user-plus',
-                    text: 'Join Waiting List'
+                    icon: 'list',
+                    text: `Join Waiting List (${waitlist_count} people)`,
+                    modal: true,
+                    action: 'waitlist'
+                },
+                full_no_waitlist: {
+                    class: 'btn-secondary',
+                    icon: 'ban',
+                    text: 'Event Full',
+                    modal: false,
+                    action: 'none'
                 },
                 
                 // Closed states
                 closed: {
                     class: 'btn-secondary',
                     icon: 'ban',
-                    text: 'Registration Closed'
+                    text: 'Registration Closed',
+                    modal: false,
+                    action: 'none'
                 },
                 past: {
                     class: 'btn-secondary',
                     icon: 'calendar-times',
-                    text: 'Event Passed'
+                    text: 'Event Passed',
+                    modal: false,
+                    action: 'none'
                 }
             };
         
@@ -309,36 +329,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Event is full
                 return 'full';
             };
-        
-            // Get the current state
-            const currentState = determineButtonState();
-            const buttonConfig = buttonStates[currentState];
-        
-            // Reset button classes
-            registerButton.className = 'btn ' + buttonConfig.class;
-        
-            // Update button content
-            registerButton.innerHTML = `
-                <i class="fas fa-${buttonConfig.icon}"></i> 
-                ${buttonConfig.text}
-            `;
-        
-            // Dynamic button interactivity
-            registerButton.disabled = currentState === 'closed' || currentState === 'past';
-        
-            // Optional: Add tooltips or additional context
-            if (currentState === 'full') {
-                registerButton.setAttribute('title', `Event is full. ${spots_left || 0} spots left on waiting list`);
-            } else if (currentState === 'past') {
-                registerButton.setAttribute('title', 'This event has already occurred');
-            }
-        
-            // Optionally, add data attributes for further customization
-            registerButton.dataset.eventState = currentState;
-            registerButton.dataset.spotsLeft = spots_left || 0;
-            registerButton.dataset.maxParticipants = max_participants || 0;
-        }
+         // Get the current state
+         const currentState = determineButtonState();
+         const buttonConfig = buttonStates[currentState];
 
+         // Reset button classes and attributes
+         registerButton.className = `btn ${buttonConfig.class} btn-lg w-100`;
+         registerButton.innerHTML = `
+             <i class="fas fa-${buttonConfig.icon}"></i> 
+             ${buttonConfig.text}
+         `;
+
+         // Configure modal and click behavior
+         if (buttonConfig.modal) {
+             registerButton.setAttribute('data-bs-toggle', 'modal');
+             registerButton.setAttribute('data-bs-target', '#registrationModal');
+         } else {
+             registerButton.removeAttribute('data-bs-toggle');
+             registerButton.removeAttribute('data-bs-target');
+         }
+
+         // Disable button for non-interactive states
+         registerButton.disabled = buttonConfig.action === 'none';
+
+         // Optional: Add tooltips or additional context
+         if (currentState === 'full_waitlist') {
+             registerButton.setAttribute('title', `Waiting list has ${waitlist_count} people`);
+         } else if (currentState === 'past') {
+             registerButton.setAttribute('title', 'This event has already occurred');
+         }
+
+         // Add data attributes for tracking
+         registerButton.dataset.eventState = currentState;
+         registerButton.dataset.action = buttonConfig.action;
+         registerButton.dataset.spotsLeft = spots_left || 0;
+         registerButton.dataset.maxParticipants = max_participants || 0;
+     }
         handleErrors(errors) {
             if (typeof errors === 'string') {
                 utils.showAlert('danger', errors);

@@ -81,5 +81,5 @@ function showNotification(message, type) {
     
     setTimeout(() => {
         alertDiv.remove();
-    }, 1000);
+    }, 500);
 }

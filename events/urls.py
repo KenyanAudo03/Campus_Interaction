@@ -6,7 +6,7 @@ from rest_framework_nested import routers
 # urls.py
 from django.urls import path
 
-from .views import  register_event,cancel_registration,event_status_view
+
 from . import api_views
 from .views import (
     EventListView,
@@ -17,6 +17,10 @@ from .views import (
     EventDeleteView,
     CampusAutocompleteView,
     LoadMoreCommentsView,
+    update_event,
+    cancel_registration,
+    event_status_view,
+    register_event,
    
 
     
@@ -69,4 +73,5 @@ urlpatterns = [
     path('api/event/<int:event_id>/status/', 
          event_status_view, 
          name='event_status'),
+    path('api/events/<int:event_id>/update/', update_event, name='update_event'),
 ]

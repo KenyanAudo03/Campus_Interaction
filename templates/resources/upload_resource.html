@@ -5,21 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Resource</title>
-    <link rel="stylesheet" href="{% static 'css/resources/styles.css' %}">
-
+    <link rel="stylesheet" href="{% static 'css/resources/resources.css' %}">
 </head>
 <body>
     <h1>Upload a Resource</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <!-- Display errors if any -->
-        {% if form.non_field_errors %}
-            <div class="error">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
-        {{ form.as_p }}
-        <button type="submit">Upload</button>
-    </form>
+    <div class="form-container">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <!-- Display errors if any -->
+            {% if form.non_field_errors %}
+                <div class="error">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+            {{ form.as_p }}
+            <button type="submit">Upload</button>
+        </form>
+    </div>
 </body>
 </html>

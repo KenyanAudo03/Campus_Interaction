@@ -1,3 +1,4 @@
+from ast import parse
 import logging
 import time
 from django.contrib import messages
@@ -28,7 +29,7 @@ from .models import Comment, Event, EventRegistration,RegistrationCancellationLo
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError,ObjectDoesNotExist
-import logging
+import json
 
 
 
@@ -623,6 +624,7 @@ def register_event(request, event_id):
     Enhanced event registration with improved error handling and flexibility
     """
     max_retries = 3
+    backoff_time = 0.5  # Initial backoff time in seconds
     for attempt in range(max_retries):
         
         try:
@@ -633,7 +635,8 @@ def register_event(request, event_id):
                     event = Event.objects.select_for_update(nowait=True).get(id=event_id)
                 except DatabaseError:
                     if attempt < max_retries - 1:
-                        time.sleep(0.5)  # Wait a bit before retrying
+                        time.sleep(backoff_time)  # Wait a bit before retrying
+                        backoff_time *= 2  # Exponential backoff
                         continue
                     else:
                         return JsonResponse({
@@ -716,9 +719,13 @@ def register_event(request, event_id):
                             'spots_left': event.spots_left
                         })
                 
-                except Exception as e:
-                    logger.error(f"Registration attempt {attempt + 1} failed: {str(e)}")
-                    if attempt == max_retries - 1:
+                except Exception as outer_error:
+                    if attempt < max_retries - 1:
+                        time.sleep(backoff_time)
+                        backoff_time *= 2  # Exponential backoff
+                        continue
+                    else:
+                        logger.error(f"Registration error: {outer_error}", exc_info=True)
                         return JsonResponse({
                             'success': False,
                             'error': 'Registration failed. Please try again.'
@@ -756,3 +763,86 @@ def generate_google_calendar_url(event):
     google_calendar_link = f"{base_url}?{urlencode(params)}"
     
     return google_calendar_link
+
+
+
+
+
+
+
+def update_event(request, event_id):
+    try:
+        logger.info(f"Received update request for event {event_id}")
+        logger.info(f"Content Type: {request.content_type}")
+
+        # Extract payload
+        if request.content_type.startswith('multipart/form-data'):
+            payload_str = request.POST.get('payload', '{}')
+        else:
+            payload_str = request.body.decode('utf-8')
+        logger.info(f"Raw Payload String: {payload_str}")
+        
+        try:
+            body = json.loads(payload_str)
+            logger.info(f"Parsed Payload: {body}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Payload parsing error: {e}")
+            return JsonResponse({'error': 'Invalid payload', 'details': str(e)}, status=400)
+
+        if not body or (isinstance(body, dict) and len(body) == 0):
+            logger.warning("No update data provided")
+            return JsonResponse({'error': 'No update data provided', 'details': 'The payload is empty or invalid'}, status=400)
+
+        event = get_object_or_404(Event, id=event_id)
+
+        if not event.can_edit(request.user):
+            return JsonResponse({'error': 'You do not have permission to edit this event', 'details': f'User {request.user.id} cannot edit event {event_id}'}, status=403)
+
+        allowed_fields = [
+            'title', 'description', 'start_date', 'end_date', 
+            'location', 'max_participants', 'is_public', 
+            'event_type', 'content', 'status', 
+            'is_waitlist_open'
+        ]
+
+        update_count = 0
+        for field, value in body.items():
+            if field in allowed_fields:
+                try:
+                    if isinstance(value, str):
+                        value = value.lower() in ['true', '1', 'yes']
+                    if field in ['start_date', 'end_date']:
+                        value = parse(value) if value else None
+                    
+                    setattr(event, field, value)
+                    update_count += 1
+                    logger.info(f"Updated field {field} to {value}")
+                except Exception as e:
+                    logger.warning(f"Error setting field {field}: {e}")
+
+        if request.FILES:
+            for file_key in ['image', 'attachments']:
+                if file_key in request.FILES:
+                    setattr(event, file_key, request.FILES[file_key])
+                    logger.info(f"Uploaded {file_key}")
+
+        event.save()
+
+        return JsonResponse({
+            'success': True, 
+            'message': 'Event updated successfully',
+            'updated_fields': list(body.keys()),
+            'event': {
+                'id': event.id,
+                'title': event.title,
+                'location': event.location,
+                'start_date': event.start_date.isoformat() if event.start_date else None,
+                'end_date': event.end_date.isoformat() if event.end_date else None,
+            }
+        })
+
+    except Event.DoesNotExist:
+        return JsonResponse({'error': 'Event not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Unexpected error updating event: {str(e)}")
+        return JsonResponse({'error': 'Update failed', 'details': str(e)}, status=400)

@@ -1,4 +1,3 @@
-{# Registration Modal Template #}
 <div class="modal fade" id="registrationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -21,51 +20,26 @@
                     </div>
                 {% endif %}
                 
-                <form id="registrationForm" method="POST" >
+                <form id="registrationForm" method="POST">
                     {% csrf_token %}
                     <div class="mb-3">
                         <input type="hidden" name="event_id" value="{{ event.id }}">
                         <label for="id_name" class="form-label">Name</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="name" 
-                               name="name" 
-                               value="{{ request.user.get_full_name }}"
-                               required>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ request.user.get_full_name }}" required>
                         <div class="invalid-feedback" id="name-error"></div>
                     </div>
                     <div class="mb-3">
                         <label for="id_email" class="form-label">Email</label>
-                        <input type="email" 
-                               class="form-control" 
-                               id="email" 
-                               name="email" 
-                               value="{{ request.user.email }}"
-                               required>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ request.user.email }}" required>
                         <div class="invalid-feedback" id="email-error"></div>
                     </div>
                 </form>
             </div>
-                <div class="modal-footer">
-                    <div id="registration-error-container"></div>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="submitRegistration">
-                        Register
-                    </button>
-                </div>
+            <div class="modal-footer">
+                <div id="registration-error-container"></div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" id="submitRegistration">Register</button>
             </div>
         </div>
     </div>
-    <div class="card shadow-sm mb-3">
-        <div class="card-body text-center">
-            <a href="{{ google_calendar_link }}" 
-               target="_blank" 
-               class="btn btn-outline-primary w-100" 
-               id="googleCalendarBtn">
-                <i class="fas fa-calendar-plus me-2"></i> Add to Google Calendar
-            </a>
-        </div>
-    </div>
 </div>
-
-

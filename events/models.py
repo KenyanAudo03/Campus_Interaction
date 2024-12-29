@@ -235,6 +235,25 @@ class Event(models.Model):
             return self.is_waitlist_open, 'Event is full' if not self.is_waitlist_open else 'Added to waitlist'
         
         return True, 'Registration available'
+    
+    def can_edit(self, user):
+        """
+        Custom method to check editing permissions with more detailed checks
+        """
+        if not user.is_authenticated:
+            return False
+        
+        # Check if user is staff
+        if user.is_staff:
+            return True
+        
+        # Check if user is the organizer
+        if self.organizer and hasattr(self.organizer, 'user'):
+            return user == self.organizer.user
+        
+        # Optional: Add more granular permission checks if needed
+        # For example, check if user is part of an organizing team
+        return False
 
 
 class EventRegistration(models.Model):
