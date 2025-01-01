@@ -261,6 +261,7 @@
             <form id="editEventForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     {% csrf_token %}
+                    <input type="hidden" id="editEventId" value="{{ event.id }}">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="editEventTitle" class="form-label">Event Title</label>
@@ -327,7 +328,6 @@
         </div>
     </div>
 </div>
- 
 
    
              
