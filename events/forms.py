@@ -10,51 +10,27 @@ class EventForm(forms.ModelForm):
                  'location', 'image', 'max_participants', 'is_public', 'content', 
                  'attachments']
         widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter event title',
+            'title': forms.TextInput(attrs={'class': 'form-control','placeholder': 'Enter event title',
             }),
-            'description': forms.Textarea(attrs={
-                'class': 'form-control',
-                'placeholder': 'Describe the event, including the university details',
-                'rows': 3,
+            'description': forms.Textarea(attrs={'class': 'form-control','placeholder': 'Describe the event, including the university details','rows': 3,
             }),
-            'event_type': forms.Select(attrs={
-                'class': 'form-control',
-                'id': 'event-type-select',
+            'event_type': forms.Select(attrs={'class': 'form-control','id': 'event-type-select',
             }),
-            'start_date': forms.DateTimeInput(attrs={
-                'class': 'form-control',
-                'type': 'datetime-local',
+            'start_date': forms.DateTimeInput(attrs={'class': 'form-control','type': 'datetime-local',
             }),
-            'end_date': forms.DateTimeInput(attrs={
-                'class': 'form-control',
-                'type': 'datetime-local',
+            'end_date': forms.DateTimeInput(attrs={'class': 'form-control','type': 'datetime-local',
             }),
-            'location': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter event location (optional for text-based events)',
+            'location': forms.TextInput(attrs={'class': 'form-control','placeholder': 'Enter event location (optional for text-based events)',
             }),
-            'content': forms.Textarea(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter content for text-based event',
-                'rows': 5,
+            'content': forms.Textarea(attrs={'class': 'form-control','placeholder': 'Enter content for text-based event','rows': 5,
             }),
-            'image': forms.FileInput(attrs={
-                'class': 'form-control',
-                'help_text': 'Optional: Upload an image for the event.'
+            'image': forms.FileInput(attrs={'class': 'form-control','help_text': 'Optional: Upload an image for the event.'
             }),
-            'attachments': forms.FileInput(attrs={
-                'class': 'form-control',
-                'help_text': 'Optional: Upload attachments for text-based events.'
+            'attachments': forms.FileInput(attrs={'class': 'form-control','help_text': 'Optional: Upload attachments for text-based events.'
             }),
-            'max_participants': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Max participants',
-                'min': 1,
+            'max_participants': forms.NumberInput(attrs={'class': 'form-control','placeholder': 'Max participants','min': 1,
             }),
-            'is_public': forms.CheckboxInput(attrs={
-                'class': 'form-check-input',
+            'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input',
             }),
         }
 
@@ -63,13 +39,10 @@ class EventForm(forms.ModelForm):
         event_type = cleaned_data.get('event_type')
         location = cleaned_data.get('location')
         content = cleaned_data.get('content')
-
         if event_type == 'physical' and not location:
             raise forms.ValidationError("Location is required for physical events.")
-        
         if event_type == 'text' and not content:
             raise forms.ValidationError("Content is required for text-based events.")
-
         return cleaned_data
 class CommentForm(forms.ModelForm):
     class Meta:

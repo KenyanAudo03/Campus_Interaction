@@ -17,10 +17,9 @@ from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView
 from django.views.generic.edit import FormMixin
 from .forms import CommentForm, EventForm, EventRegistrationForm
-from .models import Comment, Event, EventRegistration, RegistrationCancellationLog
+from .models import Comment, Event, EventRegistration
 from notifications.bulk import notify_all_users
 from profiles.models import Profile
-from django.core.mail import send_mail
 from .managers import *
 from .utils import send_cancellation_confirmation_email, generate_google_calendar_url
 from rest_framework import status
