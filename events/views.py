@@ -536,8 +536,7 @@ def cancel_registration(request, event_id):
         return JsonResponse({
             'success': False,
             'error': 'An unexpected system error occurred',
-            'status_code': 'SYSTEM_ERROR',
-            'details': str(unexpected_error)
+            'status_code': 'SYSTEM_ERROR'
         }, status=500)
 
 def send_cancellation_confirmation_email(user, event):
