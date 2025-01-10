@@ -1,0 +1,47 @@
+val executor = ContextCompat.getMainExecutor(this)
+val biometricPrompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
+    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+        super.onAuthenticationError(errorCode, errString)
+        // Handle errors
+    }
+
+    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+        super.onAuthenticationSucceeded(result)
+        // Authentication successful, proceed with login
+    }
+
+    override fun onAuthenticationFailed() {
+        super.onAuthenticationFailed()
+        // Authentication failed
+    }
+})
+
+val promptInfo = BiometricPrompt.PromptInfo.Builder()
+    .setTitle("Biometric Login")
+    .setSubtitle("Log in using your biometric credential")
+    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+    .build()
+
+biometricPrompt.authenticate(promptInfo)
+
+
+<uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+
+// Example for simple PIN entry
+val dialogBuilder = AlertDialog.Builder(this)
+dialogBuilder.setTitle("Enter PIN")
+val input = EditText(this)
+input.inputType = InputType.TYPE_CLASS_NUMBER
+dialogBuilder.setView(input)
+dialogBuilder.setPositiveButton("OK") { _, _ ->
+    val enteredPin = input.text.toString()
+    if(verifyPin(enteredPin)) {
+        // PIN is correct, proceed with login
+    } else {
+        Toast.makeText(this, "Incorrect PIN", Toast.LENGTH_SHORT).show()
+    }
+}
+dialogBuilder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
+dialogBuilder.show()
+
