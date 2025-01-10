@@ -1,5 +1,4 @@
-# events/api_views.py
-from rest_framework import viewsets, permissions, status, filters
+from rest_framework import viewsets, permissions, status, filters, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -9,16 +8,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Event, EventRegistration, Comment
 from .serializers import (
     EventSerializer, EventRegistrationSerializer,
-    CommentSerializer
+    CommentSerializer, EventUpdateSerializer
 )
 from .filters import EventFilter
-# events/api_views.py
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from .models import Event
-from .serializers import EventUpdateSerializer
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+import logging
 
-
+logger = logging.getLogger(__name__)
 
 class IsOrganizerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -58,7 +55,6 @@ class EventViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
@@ -88,8 +84,8 @@ class CommentViewSet(viewsets.ModelViewSet):
             'liked': liked,
             'likes_count': comment.likes.count()
         })
-        
-        
+
+
 class EventUpdatePermission(permissions.BasePermission):
     """
     Custom permission to only allow event organizers or staff to update event
@@ -100,6 +96,7 @@ class EventUpdatePermission(permissions.BasePermission):
             request.user.is_staff or 
             request.user == obj.organizer.user
         )
+
 
 class EventViewSet(viewsets.ModelViewSet):
     """
@@ -145,8 +142,9 @@ class EventViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_200_OK)
         
         except Exception as e:
+            logger.error("Error updating event", exc_info=True)
             return Response({
-                'error': str(e)
+                'error': 'An unexpected error occurred'
             }, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, EventUpdatePermission])
@@ -162,21 +160,23 @@ class EventViewSet(viewsets.ModelViewSet):
                 'error': 'Status is required'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Log status change (optional)
-        event.status = new_status
-        event.save()
+        try:
+            # Log status change (optional)
+            event.status = new_status
+            event.save()
+            
+            return Response({
+                'message': f'Event status updated to {new_status}',
+                'new_status': new_status
+            }, status=status.HTTP_200_OK)
         
-        return Response({
-            'message': f'Event status updated to {new_status}',
-            'new_status': new_status
-        }, status=status.HTTP_200_OK)
-        
-# events/api_views.py
-from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404
+        except Exception as e:
+            logger.error("Error updating event status", exc_info=True)
+            return Response({
+                'error': 'An unexpected error occurred'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
 class DeleteCommentView(generics.DestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer

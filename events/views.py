@@ -171,7 +171,7 @@ class EventDetailView(LoginRequiredMixin, FormMixin, DetailView):
                 self.clear_related_cache()
                 return JsonResponse(result, status=200 if result['success'] else 400)
             except Exception as e:
-                logger.error(f"Registration error: {str(e)}")
+                logger.error("Registration error", exc_info=True)
                 return JsonResponse({
                     'success': False,
                     'error': 'An unexpected error occurred'
@@ -370,13 +370,13 @@ def event_status_view(request, event_id):
             status_data['user_status'] = user_status
         return JsonResponse(status_data)
     except Event.DoesNotExist:
-        logger.error(f"Event with ID {event_id} not found.")
+        logger.error(f"Event with ID {event_id} not found.", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': 'Event not found'
         }, status=404)
     except Exception as e:
-        logger.error(f"Error retrieving event status: {e}", exc_info=True)
+        logger.error("Error retrieving event status", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': 'An unexpected error occurred'
@@ -426,7 +426,7 @@ def cancel_registration(request, event_id):
         try:
             send_cancellation_confirmation_email(request.user.profile, event)
         except Exception as email_error:
-            logger.error(f"Email sending failed during cancellation: {email_error}")
+            logger.error("Email sending failed during cancellation", exc_info=True)
 
         response_data = {
             'success': True,
@@ -439,15 +439,12 @@ def cancel_registration(request, event_id):
         return JsonResponse(response_data)
 
     except Exception as unexpected_error:
-        logger.error(f"Unexpected cancellation error: {unexpected_error}", exc_info=True)
+        logger.error("Unexpected cancellation error", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': 'An unexpected system error occurred',
-            'status_code': 'SYSTEM_ERROR',
-            'details': str(unexpected_error)
+            'status_code': 'SYSTEM_ERROR'
         }, status=500)
-
-
 
 @login_required
 def register_event(request, event_id):
@@ -499,7 +496,7 @@ def register_event(request, event_id):
                 try:
                     send_registration_email(registration)
                 except Exception as email_error:
-                    logger.error(f"Failed to send registration email: {email_error}", exc_info=True)
+                    logger.error("Failed to send registration email", exc_info=True)
 
                 return JsonResponse({
                     'success': True,
@@ -514,12 +511,11 @@ def register_event(request, event_id):
                 backoff_time *= 2  # Exponential backoff
                 continue
             else:
-                logger.error(f"Registration error: {outer_error}", exc_info=True)
+                logger.error("Registration error", exc_info=True)
                 return JsonResponse({'success': False, 'error': 'Registration failed. Please try again.'}, status=500)
 
-    logger.error(f"Registration error: {outer_error}", exc_info=True)
+    logger.error("Registration error", exc_info=True)
     return JsonResponse({'success': False, 'error': 'Registration failed. Please try again.'}, status=500)
-
 
 class EventUpdateView(APIView):
     permission_classes = [IsAuthenticated]
