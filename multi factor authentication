@@ -1,0 +1,21 @@
+import pyotp
+
+# Generate a secret key for the user
+secret_key = pyotp.random_base32()
+
+# Create a TOTP object with the secret
+totp = pyotp.TOTP(secret_key)
+
+# The user would scan this QR code to add the account to their authenticator app
+qr_code = totp.provisioning_uri("user@example.com", issuer_name="CAMPUS INTERACTION")
+
+# Generate the current TOTP code
+current_code = totp.now()
+
+# Validate a code entered by the user
+def verify_code(user_input):
+    return totp.verify(user_input)
+
+print(f"QR Code: {qr_code}")
+print(f"Current Code: {current_code}")
+print(f"Verification: {verify_code(current_code)}") # Should return True
