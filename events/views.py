@@ -171,7 +171,7 @@ class EventDetailView(LoginRequiredMixin, FormMixin, DetailView):
                 self.clear_related_cache()
                 return JsonResponse(result, status=200 if result['success'] else 400)
             except Exception as e:
-                logger.error("Registration error", exc_info=True)
+                logger.error("Registration error: %s", str(e), exc_info=True)
                 return JsonResponse({
                     'success': False,
                     'error': 'An unexpected error occurred'
@@ -310,12 +310,11 @@ class EventDeleteView(LoginRequiredMixin, DeleteView):
             try:
                 default_storage.delete(image_path)
             except Exception as e:
-                logger.error(f"Error deleting file {image_path}: {e}")
+                logger.error("Error deleting file %s: %s", image_path, str(e), exc_info=True)
                 return JsonResponse({
                     "status": "success",
                     "message": "Event deleted, but media file removal failed."
                 }, status=500)
-
         messages.success(request, "Event deleted successfully.")
         return JsonResponse({"status": "success", "message": "Event deleted successfully."})
 
@@ -376,7 +375,7 @@ def event_status_view(request, event_id):
             'error': 'Event not found'
         }, status=404)
     except Exception as e:
-        logger.error("Error retrieving event status", exc_info=True)
+        logger.error("Error retrieving event status: %s", str(e), exc_info=True)
         return JsonResponse({
             'success': False,
             'error': 'An unexpected error occurred'
