@@ -728,9 +728,10 @@ def register_event(request, event_id):
                     return JsonResponse(response_data)
                 
                 except ValidationError as ve:
+                    logger.error(f"Validation error: {ve}", exc_info=True)
                     return JsonResponse({
                         'success': False,
-                        'error': str(ve),
+                        'error': 'Validation error occurred',
                         'status_code': 'VALIDATION_ERROR'
                     }, status=400)
                 
