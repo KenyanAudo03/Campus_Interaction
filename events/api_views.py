@@ -13,6 +13,7 @@ from .serializers import (
 )
 from .filters import EventFilter
 # events/api_views.py
+import logging
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Event
@@ -145,8 +146,9 @@ class EventViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_200_OK)
         
         except Exception as e:
+            logging.error("An error occurred during partial update: %s", str(e))
             return Response({
-                'error': str(e)
+                'error': 'An internal error has occurred. Please try again later.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, EventUpdatePermission])
